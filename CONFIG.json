@@ -16,6 +16,10 @@
     "current": "pvp",
     "autoSwitch": false
   },
+  "friendlyFire": {
+    "enabled": false,
+    "description": "If false, bot will not target the owner in PvP mode"
+  },
   "safety": {
     "maxCpuPercent": 45,
     "maxMemoryMB": 512,
