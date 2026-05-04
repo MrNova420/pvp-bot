@@ -1171,31 +1171,32 @@ class PvPAddon {
         const { spawn } = require('child_process');
         const ownerName = this.bot.username;
         
-        // Spawn 3 squad bots with realistic gaming names (no stagger - spawn all at once)
+        // Spawn 3 squad bots with realistic gaming names (60s delay to avoid Aternos throttle)
         for (let i = 0; i < 3; i++) {
-          const botName = this._generateGamingName(i);
-          this.logger.info('[PvP] Spawning squad bot: ' + botName);
-          
-          const proc = spawn('node', ['src/engine.js'], {
-            cwd: '/home/mrnova420/pvp-bot',
-            detached: true,
-            stdio: 'ignore',
-            env: { ...process.env, BOT_NAME: botName, SQUAD_MODE: 'true' }
-          });
-          
-          // Add error handler
-          proc.on('error', (err) => {
-            this.logger.error('[PvP] Failed to spawn squad bot ' + botName + ': ' + err.message);
-          });
-          
-          proc.on('exit', (code, signal) => {
-            if (code !== 0) {
-              this.logger.warn('[PvP] Squad bot ' + botName + ' exited with code ' + code);
-            }
-          });
-          
-          proc.unref();
-          this.logger.info('[PvP] Spawned squad bot: ' + botName);
+          setTimeout(() => {
+            const botName = this._generateGamingName(i);
+            this.logger.info('[PvP] Spawning squad bot: ' + botName);
+            
+            const proc = spawn('node', ['src/engine.js'], {
+              cwd: '/home/mrnova420/pvp-bot',
+              detached: true,
+              stdio: 'ignore',
+              env: { ...process.env, BOT_NAME: botName, SQUAD_MODE: 'true' }
+            });
+            
+            proc.on('error', (err) => {
+              this.logger.error('[PvP] Failed to spawn squad bot ' + botName + ': ' + err.message);
+            });
+            
+            proc.on('exit', (code, signal) => {
+              if (code !== 0 && code !== null) {
+                this.logger.warn('[PvP] Squad bot ' + botName + ' exited with code ' + code);
+              }
+            });
+            
+            proc.unref();
+            this.logger.info('[PvP] Spawned squad bot: ' + botName);
+          }, i * 60000); // 60 seconds between spawns
         }
         
         this.bot.chat('4-bot squad spawning! 3 bots with gaming names joining now...');
@@ -1230,7 +1231,6 @@ class PvPAddon {
               env: { ...process.env, BOT_NAME: botName, ARMY_MODE: 'true' }
             });
             
-            // Add error handler
             proc.on('error', (err) => {
               this.logger.error('[PvP] Failed to spawn army bot ' + botName + ': ' + err.message);
             });
@@ -1247,7 +1247,7 @@ class PvPAddon {
             if (spawned % 10 === 0) {
               this.logger.info('[PvP] Spawned ' + spawned + '/' + count + ' army bots so far');
             }
-          }, i * 100); // Spawn every 100ms
+          }, i * 60000); // 60 seconds between spawns to avoid Aternos throttle
         }
         
         this.bot.chat('Army of ' + count + ' bots spawning with gaming names! Will spawn over ~' + Math.ceil(count * 0.1) + ' seconds');

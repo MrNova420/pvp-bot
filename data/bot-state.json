@@ -1,8 +1,8 @@
 {
   "lastPosition": {
-    "x": -2.3,
-    "y": 66,
-    "z": -755.405896422993,
+    "x": 0,
+    "y": 0,
+    "z": 0,
     "dimension": "overworld"
   },
   "currentMode": "afk",
@@ -40,5 +40,5 @@
   "landmarks": [],
   "playerRelationships": {},
   "workProgress": {},
-  "lastSaveTime": "2026-05-04T23:05:16.928Z"
+  "lastSaveTime": "2026-05-04T23:20:39.173Z"
 }
