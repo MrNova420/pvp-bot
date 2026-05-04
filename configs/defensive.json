@@ -1,0 +1,23 @@
+{
+  "name": "defensive",
+  "description": "Maximum defense - retreat when hurt",
+  "combat": {
+    "autoAttack": false,
+    "attackRange": 3,
+    "cps": 12,
+    "enableCrits": true,
+    "enableStrafe": true,
+    "enableWTap": false,
+    "enableAntiKB": true,
+    "enableWeaponSwitch": true,
+    "autoHeal": true,
+    "healThreshold": 16,
+    "autoPearl": true,
+    "autoPotion": true,
+    "rangedEnabled": true,
+    "rangedRange": 15,
+    "crystalEnabled": false,
+    "revengeEnabled": false,
+    "combatStyle": "defensive"
+  }
+}

@@ -119,7 +119,7 @@ async function startBot() {
   
   console.log('\n🚀 Starting bot...');
   
-  engineProcess = spawn('node', ['index.js'], {
+  engineProcess = spawn('node', ['src/engine.js'], {
     stdio: 'inherit',
     cwd: __dirname,
     detached: false
@@ -289,7 +289,7 @@ async function showHelp() {
   console.log('  2. Enter server IP');
   console.log('  3. Enter bot name');
   console.log('  4. Enter YOUR username (to protect)');
-  console.log('  5. Run: node index.js');
+  console.log('  5. Run: node src/engine.js');
   console.log('');
   console.log('⚔️  Combat Features:');
   console.log('  - W-tap: Sprint reset for max knockback');

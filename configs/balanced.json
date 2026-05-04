@@ -1,0 +1,23 @@
+{
+  "name": "balanced",
+  "description": "Balanced - recommended for most use",
+  "combat": {
+    "autoAttack": true,
+    "attackRange": 4,
+    "cps": 15,
+    "enableCrits": true,
+    "enableStrafe": true,
+    "enableWTap": true,
+    "enableAntiKB": true,
+    "enableWeaponSwitch": true,
+    "autoHeal": true,
+    "healThreshold": 14,
+    "autoPearl": true,
+    "autoPotion": true,
+    "rangedEnabled": true,
+    "rangedRange": 20,
+    "crystalEnabled": true,
+    "revengeEnabled": true,
+    "combatStyle": "hybrid"
+  }
+}

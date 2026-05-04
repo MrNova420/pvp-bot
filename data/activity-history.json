@@ -1,0 +1,29 @@
+[
+  {
+    "id": "activity-1777911494505-6vufucwl2",
+    "type": "login",
+    "timestamp": 1777911494505,
+    "date": "2026-05-04T16:18:14.505Z",
+    "details": {
+      "server": "MrNova420.aternos.me"
+    }
+  },
+  {
+    "id": "activity-1777911627718-jthwei9ry",
+    "type": "login",
+    "timestamp": 1777911627718,
+    "date": "2026-05-04T16:20:27.718Z",
+    "details": {
+      "server": "MrNova420.aternos.me"
+    }
+  },
+  {
+    "id": "activity-1777911682838-jh87ek80g",
+    "type": "login",
+    "timestamp": 1777911682838,
+    "date": "2026-05-04T16:21:22.838Z",
+    "details": {
+      "server": "MrNova420.aternos.me"
+    }
+  }
+]

@@ -1,0 +1,23 @@
+{
+  "name": "aggressive",
+  "description": "Maximum aggression - always attack",
+  "combat": {
+    "autoAttack": true,
+    "attackRange": 5,
+    "cps": 18,
+    "enableCrits": true,
+    "enableStrafe": true,
+    "enableWTap": true,
+    "enableAntiKB": false,
+    "enableWeaponSwitch": true,
+    "autoHeal": true,
+    "healThreshold": 10,
+    "autoPearl": false,
+    "autoPotion": false,
+    "rangedEnabled": true,
+    "rangedRange": 25,
+    "crystalEnabled": true,
+    "revengeEnabled": true,
+    "combatStyle": "aggressive"
+  }
+}
