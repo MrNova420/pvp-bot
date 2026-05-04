@@ -1709,5 +1709,693 @@
     "details": {
       "server": "MrNova420.aternos.me"
     }
+  },
+  {
+    "id": "activity-1777937093033-25laf0ima",
+    "type": "login",
+    "timestamp": 1777937093033,
+    "date": "2026-05-04T23:24:53.033Z",
+    "details": {
+      "server": "MrNova420.aternos.me"
+    }
+  },
+  {
+    "id": "activity-1777937105675-89840h1mk",
+    "type": "login",
+    "timestamp": 1777937105675,
+    "date": "2026-05-04T23:25:05.675Z",
+    "details": {
+      "server": "MrNova420.aternos.me"
+    }
+  },
+  {
+    "id": "activity-1777937112126-cyl4i7l5p",
+    "type": "login",
+    "timestamp": 1777937112126,
+    "date": "2026-05-04T23:25:12.126Z",
+    "details": {
+      "server": "MrNova420.aternos.me"
+    }
+  },
+  {
+    "id": "activity-1777937118605-dpbfavn4q",
+    "type": "login",
+    "timestamp": 1777937118605,
+    "date": "2026-05-04T23:25:18.605Z",
+    "details": {
+      "server": "MrNova420.aternos.me"
+    }
+  },
+  {
+    "id": "activity-1777937125051-9ous0y1lh",
+    "type": "login",
+    "timestamp": 1777937125051,
+    "date": "2026-05-04T23:25:25.051Z",
+    "details": {
+      "server": "MrNova420.aternos.me"
+    }
+  },
+  {
+    "id": "activity-1777937155134-nsg7lvjo6",
+    "type": "login",
+    "timestamp": 1777937155134,
+    "date": "2026-05-04T23:25:55.134Z",
+    "details": {
+      "server": "MrNova420.aternos.me"
+    }
+  },
+  {
+    "id": "activity-1777937166649-os0rd6ces",
+    "type": "login",
+    "timestamp": 1777937166649,
+    "date": "2026-05-04T23:26:06.649Z",
+    "details": {
+      "server": "MrNova420.aternos.me"
+    }
+  },
+  {
+    "id": "activity-1777937168869-s1ioezbzx",
+    "type": "death",
+    "timestamp": 1777937168869,
+    "date": "2026-05-04T23:26:08.869Z",
+    "details": {
+      "position": {
+        "x": -32.7,
+        "y": 62,
+        "z": -748.6762196916025
+      }
+    }
+  },
+  {
+    "id": "activity-1777937172095-4t55r6sz2",
+    "type": "login",
+    "timestamp": 1777937172095,
+    "date": "2026-05-04T23:26:12.095Z",
+    "details": {
+      "server": "MrNova420.aternos.me"
+    }
+  },
+  {
+    "id": "activity-1777937178588-w82dp9rid",
+    "type": "login",
+    "timestamp": 1777937178588,
+    "date": "2026-05-04T23:26:18.588Z",
+    "details": {
+      "server": "MrNova420.aternos.me"
+    }
+  },
+  {
+    "id": "activity-1777937184323-gowpwk1ve",
+    "type": "death",
+    "timestamp": 1777937184323,
+    "date": "2026-05-04T23:26:24.323Z",
+    "details": {
+      "position": null
+    }
+  },
+  {
+    "id": "activity-1777937185033-l5mnp73va",
+    "type": "login",
+    "timestamp": 1777937185033,
+    "date": "2026-05-04T23:26:25.033Z",
+    "details": {
+      "server": "MrNova420.aternos.me"
+    }
+  },
+  {
+    "id": "activity-1777937198773-qe6aywcmb",
+    "type": "death",
+    "timestamp": 1777937198773,
+    "date": "2026-05-04T23:26:38.773Z",
+    "details": {
+      "position": null
+    }
+  },
+  {
+    "id": "activity-1777937201836-2ggbcb80r",
+    "type": "login",
+    "timestamp": 1777937201836,
+    "date": "2026-05-04T23:26:41.836Z",
+    "details": {
+      "server": "MrNova420.aternos.me"
+    }
+  },
+  {
+    "id": "activity-1777937208432-0prx7ptl9",
+    "type": "login",
+    "timestamp": 1777937208432,
+    "date": "2026-05-04T23:26:48.432Z",
+    "details": {
+      "server": "MrNova420.aternos.me"
+    }
+  },
+  {
+    "id": "activity-1777937214886-d7566sdt2",
+    "type": "login",
+    "timestamp": 1777937214886,
+    "date": "2026-05-04T23:26:54.886Z",
+    "details": {
+      "server": "MrNova420.aternos.me"
+    }
+  },
+  {
+    "id": "activity-1777937215517-rx4ucv4e3",
+    "type": "death",
+    "timestamp": 1777937215517,
+    "date": "2026-05-04T23:26:55.517Z",
+    "details": {
+      "position": null
+    }
+  },
+  {
+    "id": "activity-1777937221377-gmdlunky0",
+    "type": "login",
+    "timestamp": 1777937221377,
+    "date": "2026-05-04T23:27:01.377Z",
+    "details": {
+      "server": "MrNova420.aternos.me"
+    }
+  },
+  {
+    "id": "activity-1777937226034-ryzb0w393",
+    "type": "death",
+    "timestamp": 1777937226034,
+    "date": "2026-05-04T23:27:06.034Z",
+    "details": {
+      "position": null
+    }
+  },
+  {
+    "id": "activity-1777937229551-w17lqvg6k",
+    "type": "login",
+    "timestamp": 1777937229551,
+    "date": "2026-05-04T23:27:09.551Z",
+    "details": {
+      "server": "MrNova420.aternos.me"
+    }
+  },
+  {
+    "id": "activity-1777937236376-f4xz0r8fb",
+    "type": "death",
+    "timestamp": 1777937236376,
+    "date": "2026-05-04T23:27:16.376Z",
+    "details": {
+      "position": null
+    }
+  },
+  {
+    "id": "activity-1777937243030-2l7nkl5rf",
+    "type": "login",
+    "timestamp": 1777937243030,
+    "date": "2026-05-04T23:27:23.030Z",
+    "details": {
+      "server": "MrNova420.aternos.me"
+    }
+  },
+  {
+    "id": "activity-1777937248687-0adeuwplc",
+    "type": "login",
+    "timestamp": 1777937248687,
+    "date": "2026-05-04T23:27:28.687Z",
+    "details": {
+      "server": "MrNova420.aternos.me"
+    }
+  },
+  {
+    "id": "activity-1777937250278-uhiufrojr",
+    "type": "death",
+    "timestamp": 1777937250278,
+    "date": "2026-05-04T23:27:30.278Z",
+    "details": {
+      "position": null
+    }
+  },
+  {
+    "id": "activity-1777937261235-2920u9dmg",
+    "type": "death",
+    "timestamp": 1777937261235,
+    "date": "2026-05-04T23:27:41.235Z",
+    "details": {
+      "position": null
+    }
+  },
+  {
+    "id": "activity-1777937267882-wcjha20qu",
+    "type": "login",
+    "timestamp": 1777937267882,
+    "date": "2026-05-04T23:27:47.882Z",
+    "details": {
+      "server": "MrNova420.aternos.me"
+    }
+  },
+  {
+    "id": "activity-1777937274479-qfojym8y8",
+    "type": "login",
+    "timestamp": 1777937274479,
+    "date": "2026-05-04T23:27:54.479Z",
+    "details": {
+      "server": "MrNova420.aternos.me"
+    }
+  },
+  {
+    "id": "activity-1777937288775-5wetdmpn5",
+    "type": "death",
+    "timestamp": 1777937288775,
+    "date": "2026-05-04T23:28:08.775Z",
+    "details": {
+      "position": null
+    }
+  },
+  {
+    "id": "activity-1777937290065-ilyuq8q26",
+    "type": "login",
+    "timestamp": 1777937290065,
+    "date": "2026-05-04T23:28:10.065Z",
+    "details": {
+      "server": "MrNova420.aternos.me"
+    }
+  },
+  {
+    "id": "activity-1777937323315-sxni374zh",
+    "type": "login",
+    "timestamp": 1777937323315,
+    "date": "2026-05-04T23:28:43.315Z",
+    "details": {
+      "server": "MrNova420.aternos.me"
+    }
+  },
+  {
+    "id": "activity-1777937334958-2q65dbnrj",
+    "type": "login",
+    "timestamp": 1777937334958,
+    "date": "2026-05-04T23:28:54.958Z",
+    "details": {
+      "server": "MrNova420.aternos.me"
+    }
+  },
+  {
+    "id": "activity-1777937341485-kbszk7r2a",
+    "type": "login",
+    "timestamp": 1777937341485,
+    "date": "2026-05-04T23:29:01.485Z",
+    "details": {
+      "server": "MrNova420.aternos.me"
+    }
+  },
+  {
+    "id": "activity-1777937388365-gm5jxiq3n",
+    "type": "login",
+    "timestamp": 1777937388365,
+    "date": "2026-05-04T23:29:48.365Z",
+    "details": {
+      "server": "MrNova420.aternos.me"
+    }
+  },
+  {
+    "id": "activity-1777937407585-ph1aq0wa4",
+    "type": "login",
+    "timestamp": 1777937407585,
+    "date": "2026-05-04T23:30:07.585Z",
+    "details": {
+      "server": "MrNova420.aternos.me"
+    }
+  },
+  {
+    "id": "activity-1777937412779-ly1wx0z5l",
+    "type": "login",
+    "timestamp": 1777937412779,
+    "date": "2026-05-04T23:30:12.779Z",
+    "details": {
+      "server": "MrNova420.aternos.me"
+    }
+  },
+  {
+    "id": "activity-1777937439839-5umsw0m63",
+    "type": "login",
+    "timestamp": 1777937439839,
+    "date": "2026-05-04T23:30:39.839Z",
+    "details": {
+      "server": "MrNova420.aternos.me"
+    }
+  },
+  {
+    "id": "activity-1777937452506-put770h5u",
+    "type": "login",
+    "timestamp": 1777937452506,
+    "date": "2026-05-04T23:30:52.506Z",
+    "details": {
+      "server": "MrNova420.aternos.me"
+    }
+  },
+  {
+    "id": "activity-1777937458981-oyc3rdk5m",
+    "type": "login",
+    "timestamp": 1777937458981,
+    "date": "2026-05-04T23:30:58.981Z",
+    "details": {
+      "server": "MrNova420.aternos.me"
+    }
+  },
+  {
+    "id": "activity-1777937464412-jvduenrfo",
+    "type": "login",
+    "timestamp": 1777937464412,
+    "date": "2026-05-04T23:31:04.412Z",
+    "details": {
+      "server": "MrNova420.aternos.me"
+    }
+  },
+  {
+    "id": "activity-1777937470882-929qm6da8",
+    "type": "login",
+    "timestamp": 1777937470882,
+    "date": "2026-05-04T23:31:10.882Z",
+    "details": {
+      "server": "MrNova420.aternos.me"
+    }
+  },
+  {
+    "id": "activity-1777937491829-lvh95ciwk",
+    "type": "login",
+    "timestamp": 1777937491829,
+    "date": "2026-05-04T23:31:31.829Z",
+    "details": {
+      "server": "MrNova420.aternos.me"
+    }
+  },
+  {
+    "id": "activity-1777937500426-fgjdneiod",
+    "type": "login",
+    "timestamp": 1777937500426,
+    "date": "2026-05-04T23:31:40.426Z",
+    "details": {
+      "server": "MrNova420.aternos.me"
+    }
+  },
+  {
+    "id": "activity-1777937505876-ztfu7ugh6",
+    "type": "login",
+    "timestamp": 1777937505876,
+    "date": "2026-05-04T23:31:45.876Z",
+    "details": {
+      "server": "MrNova420.aternos.me"
+    }
+  },
+  {
+    "id": "activity-1777937512364-e1i53i5ra",
+    "type": "login",
+    "timestamp": 1777937512364,
+    "date": "2026-05-04T23:31:52.364Z",
+    "details": {
+      "server": "MrNova420.aternos.me"
+    }
+  },
+  {
+    "id": "activity-1777937530508-h14x7ucly",
+    "type": "login",
+    "timestamp": 1777937530508,
+    "date": "2026-05-04T23:32:10.508Z",
+    "details": {
+      "server": "MrNova420.aternos.me"
+    }
+  },
+  {
+    "id": "activity-1777937552389-dlc569e8n",
+    "type": "login",
+    "timestamp": 1777937552389,
+    "date": "2026-05-04T23:32:32.389Z",
+    "details": {
+      "server": "MrNova420.aternos.me"
+    }
+  },
+  {
+    "id": "activity-1777937558884-jpm2s18mg",
+    "type": "login",
+    "timestamp": 1777937558884,
+    "date": "2026-05-04T23:32:38.884Z",
+    "details": {
+      "server": "MrNova420.aternos.me"
+    }
+  },
+  {
+    "id": "activity-1777937564024-c3u680oal",
+    "type": "login",
+    "timestamp": 1777937564024,
+    "date": "2026-05-04T23:32:44.024Z",
+    "details": {
+      "server": "MrNova420.aternos.me"
+    }
+  },
+  {
+    "id": "activity-1777937569482-ahq70akvp",
+    "type": "login",
+    "timestamp": 1777937569482,
+    "date": "2026-05-04T23:32:49.482Z",
+    "details": {
+      "server": "MrNova420.aternos.me"
+    }
+  },
+  {
+    "id": "activity-1777937590526-woefahq05",
+    "type": "login",
+    "timestamp": 1777937590526,
+    "date": "2026-05-04T23:33:10.526Z",
+    "details": {
+      "server": "MrNova420.aternos.me"
+    }
+  },
+  {
+    "id": "activity-1777937597121-ll6zajjgw",
+    "type": "login",
+    "timestamp": 1777937597121,
+    "date": "2026-05-04T23:33:17.121Z",
+    "details": {
+      "server": "MrNova420.aternos.me"
+    }
+  },
+  {
+    "id": "activity-1777937616143-fp3in5kuu",
+    "type": "login",
+    "timestamp": 1777937616143,
+    "date": "2026-05-04T23:33:36.143Z",
+    "details": {
+      "server": "MrNova420.aternos.me"
+    }
+  },
+  {
+    "id": "activity-1777937622811-nfwf7smdo",
+    "type": "login",
+    "timestamp": 1777937622811,
+    "date": "2026-05-04T23:33:42.811Z",
+    "details": {
+      "server": "MrNova420.aternos.me"
+    }
+  },
+  {
+    "id": "activity-1777937630730-67iwwuewy",
+    "type": "login",
+    "timestamp": 1777937630730,
+    "date": "2026-05-04T23:33:50.730Z",
+    "details": {
+      "server": "MrNova420.aternos.me"
+    }
+  },
+  {
+    "id": "activity-1777937651981-kswbaz19c",
+    "type": "login",
+    "timestamp": 1777937651981,
+    "date": "2026-05-04T23:34:11.981Z",
+    "details": {
+      "server": "MrNova420.aternos.me"
+    }
+  },
+  {
+    "id": "activity-1777937668134-op10xiip3",
+    "type": "login",
+    "timestamp": 1777937668134,
+    "date": "2026-05-04T23:34:28.134Z",
+    "details": {
+      "server": "MrNova420.aternos.me"
+    }
+  },
+  {
+    "id": "activity-1777937674771-t24jxxieh",
+    "type": "login",
+    "timestamp": 1777937674772,
+    "date": "2026-05-04T23:34:34.772Z",
+    "details": {
+      "server": "MrNova420.aternos.me"
+    }
+  },
+  {
+    "id": "activity-1777937681252-r0lfso4b0",
+    "type": "login",
+    "timestamp": 1777937681252,
+    "date": "2026-05-04T23:34:41.252Z",
+    "details": {
+      "server": "MrNova420.aternos.me"
+    }
+  },
+  {
+    "id": "activity-1777937693929-if33czzh6",
+    "type": "login",
+    "timestamp": 1777937693929,
+    "date": "2026-05-04T23:34:53.929Z",
+    "details": {
+      "server": "MrNova420.aternos.me"
+    }
+  },
+  {
+    "id": "activity-1777937735482-eyeh121v8",
+    "type": "login",
+    "timestamp": 1777937735482,
+    "date": "2026-05-04T23:35:35.482Z",
+    "details": {
+      "server": "MrNova420.aternos.me"
+    }
+  },
+  {
+    "id": "activity-1777937746146-79semvu5s",
+    "type": "login",
+    "timestamp": 1777937746146,
+    "date": "2026-05-04T23:35:46.146Z",
+    "details": {
+      "server": "MrNova420.aternos.me"
+    }
+  },
+  {
+    "id": "activity-1777937750374-bpfl88wzo",
+    "type": "login",
+    "timestamp": 1777937750374,
+    "date": "2026-05-04T23:35:50.374Z",
+    "details": {
+      "server": "MrNova420.aternos.me"
+    }
+  },
+  {
+    "id": "activity-1777937780485-vxp3uj6wp",
+    "type": "login",
+    "timestamp": 1777937780485,
+    "date": "2026-05-04T23:36:20.485Z",
+    "details": {
+      "server": "MrNova420.aternos.me"
+    }
+  },
+  {
+    "id": "activity-1777937791979-hh0z0y5rs",
+    "type": "login",
+    "timestamp": 1777937791979,
+    "date": "2026-05-04T23:36:31.979Z",
+    "details": {
+      "server": "MrNova420.aternos.me"
+    }
+  },
+  {
+    "id": "activity-1777937798433-kw9utukgv",
+    "type": "login",
+    "timestamp": 1777937798433,
+    "date": "2026-05-04T23:36:38.433Z",
+    "details": {
+      "server": "MrNova420.aternos.me"
+    }
+  },
+  {
+    "id": "activity-1777937804910-jg2ds7l9e",
+    "type": "login",
+    "timestamp": 1777937804910,
+    "date": "2026-05-04T23:36:44.910Z",
+    "details": {
+      "server": "MrNova420.aternos.me"
+    }
+  },
+  {
+    "id": "activity-1777937811341-ro01gc30h",
+    "type": "login",
+    "timestamp": 1777937811341,
+    "date": "2026-05-04T23:36:51.341Z",
+    "details": {
+      "server": "MrNova420.aternos.me"
+    }
+  },
+  {
+    "id": "activity-1777937817854-g86vz6ep2",
+    "type": "login",
+    "timestamp": 1777937817854,
+    "date": "2026-05-04T23:36:57.854Z",
+    "details": {
+      "server": "MrNova420.aternos.me"
+    }
+  },
+  {
+    "id": "activity-1777937836171-7rxd9zq5q",
+    "type": "login",
+    "timestamp": 1777937836171,
+    "date": "2026-05-04T23:37:16.171Z",
+    "details": {
+      "server": "MrNova420.aternos.me"
+    }
+  },
+  {
+    "id": "activity-1777937844587-9fegx32qg",
+    "type": "login",
+    "timestamp": 1777937844587,
+    "date": "2026-05-04T23:37:24.587Z",
+    "details": {
+      "server": "MrNova420.aternos.me"
+    }
+  },
+  {
+    "id": "activity-1777937852940-og0gwrf8b",
+    "type": "login",
+    "timestamp": 1777937852940,
+    "date": "2026-05-04T23:37:32.940Z",
+    "details": {
+      "server": "MrNova420.aternos.me"
+    }
+  },
+  {
+    "id": "activity-1777937869964-u72o91snt",
+    "type": "login",
+    "timestamp": 1777937869964,
+    "date": "2026-05-04T23:37:49.964Z",
+    "details": {
+      "server": "MrNova420.aternos.me"
+    }
+  },
+  {
+    "id": "activity-1777937874642-e258v7d5a",
+    "type": "login",
+    "timestamp": 1777937874642,
+    "date": "2026-05-04T23:37:54.642Z",
+    "details": {
+      "server": "MrNova420.aternos.me"
+    }
+  },
+  {
+    "id": "activity-1777937895385-60nv86az0",
+    "type": "login",
+    "timestamp": 1777937895385,
+    "date": "2026-05-04T23:38:15.385Z",
+    "details": {
+      "server": "MrNova420.aternos.me"
+    }
+  },
+  {
+    "id": "activity-1777937904900-pekk93l3d",
+    "type": "login",
+    "timestamp": 1777937904900,
+    "date": "2026-05-04T23:38:24.900Z",
+    "details": {
+      "server": "MrNova420.aternos.me"
+    }
+  },
+  {
+    "id": "activity-1777937911373-53vg49swe",
+    "type": "login",
+    "timestamp": 1777937911373,
+    "date": "2026-05-04T23:38:31.373Z",
+    "details": {
+      "server": "MrNova420.aternos.me"
+    }
   }
 ]

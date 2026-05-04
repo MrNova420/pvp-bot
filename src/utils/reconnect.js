@@ -2,7 +2,7 @@ class ReconnectManager {
   constructor(config = {}, logger = null) {
     this.logger = logger || console;
     this.enabled = config.enabled !== false;
-    this.maxAttempts = config.maxAttempts || 100;
+    this.maxAttempts = config.maxAttempts || Infinity; // Unlimited retries for Aternos throttle
     this.initialDelayMs = config.initialDelayMs || 5000;
     this.maxDelayMs = config.maxDelayMs || 60000;
     this.backoffMultiplier = config.backoffMultiplier || 1.5;
