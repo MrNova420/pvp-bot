@@ -1,0 +1,76 @@
+{
+  "server": {
+    "host": "MrNova420.aternos.me",
+    "port": 31267,
+    "version": "1.20.1"
+  },
+  "auth": {
+    "type": "offline",
+    "username": "xxTryHardxx",
+    "password": ""
+  },
+  "owner": {
+    "username": "Super_nova94332"
+  },
+  "mode": {
+    "current": "pvp",
+    "autoSwitch": false
+  },
+  "safety": {
+    "maxCpuPercent": 45,
+    "maxMemoryMB": 512,
+    "maxBlocksPerHour": 200,
+    "checkIntervalMs": 45000,
+    "enableThermalMonitoring": true,
+    "enableBatteryMonitoring": true,
+    "autoThrottle": true
+  },
+  "reconnect": {
+    "enabled": true,
+    "maxAttempts": 75,
+    "initialDelayMs": 5000,
+    "maxDelayMs": 60000,
+    "backoffMultiplier": 1.5
+  },
+  "logging": {
+    "level": "info",
+    "logToFile": true,
+    "logDir": "data/logs",
+    "maxLogSizeMB": 10,
+    "maxLogFiles": 5
+  },
+  "tasks": {
+    "persistDir": "data/tasks",
+    "enablePersistence": true,
+    "maxQueueSize": 100
+  },
+  "pvpMode": {
+    "enabled": true,
+    "autoAttack": true,
+    "attackRange": 4,
+    "cps": 8,
+    "enableCrits": true,
+    "enableStrafe": true,
+    "enableWTap": true,
+    "enableAntiKB": true,
+    "enableWeaponSwitch": true,
+    "autoHeal": true,
+    "healThreshold": 10,
+    "autoPearl": false,
+    "autoPotion": false,
+    "rangedEnabled": false,
+    "crystalEnabled": false,
+    "revengeEnabled": true,
+    "combatStyle": "hybrid"
+  },
+  "addons": {
+    "afk": true,
+    "player": false,
+    "pathfinding": false,
+    "building": false,
+    "mining": false,
+    "crafting": false,
+    "trading": false,
+    "superPathfinder": false
+  }
+}

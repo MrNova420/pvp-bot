@@ -1,0 +1,53 @@
+{
+  "name": "pvp-bot",
+  "version": "2.0.0",
+  "description": "PvP Bot with BetterBender engine",
+  "main": "src/engine.js",
+  "scripts": {
+    "setup": "node setup.js",
+    "start": "node launcher.js",
+    "bot": "node dashboard/server.js",
+    "civilization": "node civilization/scripts/start_civilization.js",
+    "dashboard": "node launcher.js",
+    "test": "node test/smoke.js",
+    "postinstall": "node -e \"console.log('\\\\n✅ Dependencies installed! Run: npm run setup\\\\n')\"",
+    "pm2:start": "pm2 start ecosystem.config.js",
+    "pm2:stop": "pm2 stop all",
+    "pm2:restart": "pm2 restart all",
+    "pm2:logs": "pm2 logs",
+    "pm2:status": "pm2 status",
+    "civ:tiny": "node civilization/scripts/quick_launch.js tiny_village",
+    "civ:small": "node civilization/scripts/quick_launch.js small_town",
+    "civ:medium": "node civilization/scripts/quick_launch.js medium_city",
+    "civ:large": "node civilization/scripts/quick_launch.js large_metropolis",
+    "civ:mega": "node civilization/scripts/quick_launch.js mega_civilization",
+    "civ:dashboard": "node civilization/dashboard/civilization_server.js",
+    "civ:test": "node civilization/scripts/test_simulation.js",
+    "civ:test:building": "node civilization/scripts/test_building_system.js",
+    "civ:backup": "bash civilization/scripts/backup.sh",
+    "civ:validate": "node civilization/scripts/validate_personalities.js",
+    "civ:all": "bash civilization/scripts/start_all.sh"
+  },
+  "keywords": [
+    "minecraft",
+    "bot",
+    "termux",
+    "mineflayer",
+    "autonomous"
+  ],
+  "author": "BetterBender Team",
+  "license": "MIT",
+  "dependencies": {
+    "better-sqlite3": "^11.10.0",
+    "dotenv": "^17.2.3",
+    "express": "^4.18.2",
+    "mineflayer": "^4.20.1",
+    "mineflayer-pathfinder": "^2.4.4",
+    "prismarine-item": "^1.14.0",
+    "socket.io": "^4.7.2",
+    "ws": "^8.18.3"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}
