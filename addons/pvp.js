@@ -1171,25 +1171,37 @@ class PvPAddon {
         const { spawn } = require('child_process');
         const ownerName = this.bot.username;
         
-        // Spawn 3 squad bots with realistic gaming names
+        // Spawn 3 squad bots with realistic gaming names (no stagger - spawn all at once)
         for (let i = 0; i < 3; i++) {
-          setTimeout(() => {
-            const botName = this._generateGamingName(i);
-            const proc = spawn('node', ['src/engine.js'], {
-              cwd: '/home/mrnova420/pvp-bot',
-              detached: true,
-              stdio: 'ignore',
-              env: { ...process.env, BOT_NAME: botName, SQUAD_MODE: 'true' }
-            });
-            proc.unref();
-            this.logger.info('[PvP] Spawned squad bot: ' + botName);
-          }, i * 3000); // Stagger spawns by 3 seconds
+          const botName = this._generateGamingName(i);
+          this.logger.info('[PvP] Spawning squad bot: ' + botName);
+          
+          const proc = spawn('node', ['src/engine.js'], {
+            cwd: '/home/mrnova420/pvp-bot',
+            detached: true,
+            stdio: 'ignore',
+            env: { ...process.env, BOT_NAME: botName, SQUAD_MODE: 'true' }
+          });
+          
+          // Add error handler
+          proc.on('error', (err) => {
+            this.logger.error('[PvP] Failed to spawn squad bot ' + botName + ': ' + err.message);
+          });
+          
+          proc.on('exit', (code, signal) => {
+            if (code !== 0) {
+              this.logger.warn('[PvP] Squad bot ' + botName + ' exited with code ' + code);
+            }
+          });
+          
+          proc.unref();
+          this.logger.info('[PvP] Spawned squad bot: ' + botName);
         }
         
-        this.bot.chat('4-bot squad spawning! 3 bots joining in 9 seconds...');
-        this.logger.info('[PvP] 4-bot squad: Owner ' + ownerName + ' + 3 squad bots');
+        this.bot.chat('4-bot squad spawning! 3 bots joining now...');
+        this.logger.info('[PvP] 4-bot squad: Owner ' + ownerName + ' + 3 squad bots: BenderHero, DexEasy, Xeazy');
       } catch (e) {
-        this.logger.warn('[PvP] Failed to spawn squad bots: ' + e.message);
+        this.logger.error('[PvP] Failed to spawn squad bots: ' + e.message);
         this.bot.chat('Failed to spawn squad bots: ' + e.message);
       }
       return;
@@ -1204,27 +1216,43 @@ class PvPAddon {
       
       try {
         const { spawn } = require('child_process');
+        let spawned = 0;
         
         for (let i = 0; i < count; i++) {
           setTimeout(() => {
             const botName = this._generateGamingName(i);
+            this.logger.info('[PvP] Spawning army bot ' + (i + 1) + '/' + count + ': ' + botName);
+            
             const proc = spawn('node', ['src/engine.js'], {
               cwd: '/home/mrnova420/pvp-bot',
               detached: true,
               stdio: 'ignore',
               env: { ...process.env, BOT_NAME: botName, ARMY_MODE: 'true' }
             });
-            proc.unref();
             
-            if (i % 10 === 0) {
-              this.logger.info('[PvP] Spawned army bot ' + (i + 1) + '/' + count + ': ' + botName);
+            // Add error handler
+            proc.on('error', (err) => {
+              this.logger.error('[PvP] Failed to spawn army bot ' + botName + ': ' + err.message);
+            });
+            
+            proc.on('exit', (code, signal) => {
+              if (code !== 0 && code !== null) {
+                this.logger.warn('[PvP] Army bot ' + botName + ' exited with code ' + code);
+              }
+            });
+            
+            proc.unref();
+            spawned++;
+            
+            if (spawned % 10 === 0) {
+              this.logger.info('[PvP] Spawned ' + spawned + '/' + count + ' army bots so far');
             }
           }, i * 100); // Spawn every 100ms
         }
         
-        this.bot.chat('Army of ' + count + ' bots spawning with gaming names! Will take ~' + Math.ceil(count / 10) + ' seconds');
+        this.bot.chat('Army of ' + count + ' bots spawning with gaming names! Will spawn over ~' + Math.ceil(count * 0.1) + ' seconds');
       } catch (e) {
-        this.logger.warn('[PvP] Failed to spawn army: ' + e.message);
+        this.logger.error('[PvP] Failed to spawn army: ' + e.message);
         this.bot.chat('Failed to spawn army: ' + e.message);
       }
       return;
