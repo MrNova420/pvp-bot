@@ -360,7 +360,7 @@ class PvPAddon {
       // Update target tracking
       this._updateTarget(enemies);
       
-      // If we have a target, pursue and attack
+      // If we have a target, pursue and attack AGGRESSIVELY
       if (this.currentTarget && this.currentTarget.entity) {
         // ALWAYS re-issue attack command for maximum aggression
         try {
@@ -377,6 +377,12 @@ class PvPAddon {
         
         // Sprint always for knockback and speed
         this.bot.setControlState('sprint', true);
+        
+        // Pro technique: W-tap after each hit for extra knockback
+        if (this.enableWTap && this.lastAttackTime && Date.now() - this.lastAttackTime < 300) {
+          this.bot.setControlState('forward', false);
+          setTimeout(() => this.bot.setControlState('forward', true), 50);
+        }
       } else {
         // No target - stop attacking
         if (this.advancedPvp && this.advancedPvp.isAttacking) {
