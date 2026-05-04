@@ -246,17 +246,26 @@ class PvPAddon {
   disable() {
     if (!this.enabled) return;
     this.enabled = false;
-    // Clear target when disabled
+    
+    // Clear target and stop attacking
     this.currentTarget = null;
     this.targetLostTime = 0;
     if (this.advancedPvp) {
       try { this.advancedPvp.stop(); } catch(e) {}
     }
     this.targets.clear();
+    
+    // Clear ALL control states
+    const controls = ['forward', 'back', 'left', 'right', 'jump', 'sprint'];
+    controls.forEach(ctrl => {
+      try { this.bot.setControlState(ctrl, false); } catch(e) {}
+    });
+    
     // Stop follow/protect
     this._stopFollow();
     this._stopProtect();
-    this.logger.info('[PvP] Combat Mode disabled');
+    
+    this.logger.info('[PvP] Combat Mode disabled - all systems stopped');
   }
 
   _combatLoop() {
@@ -269,55 +278,108 @@ class PvPAddon {
     }
     this.lastPhysicsTick = now;
     
-    // Use advanced PvP system if available, otherwise fallback to basic
-    if (this.useAdvanced && this.advancedPvp && this.bot.entity) {
-      this._advancedCombatLoop();
+    // MODE SWITCHING FIX: Only run PvP attacks if NOT in follow-only mode
+    // If following without protecting, skip PvP attacks (only follow)
+    // If protecting, we handle attacks in _handleFollowProtect()
+    // If not following, run normal PvP combat
+    if (!this.isFollowing) {
+      // Normal PvP mode - use advanced or basic combat
+      if (this.useAdvanced && this.advancedPvp && this.bot.entity) {
+        this._advancedCombatLoop();
+      } else {
+        this._basicCombatLoop();
+      }
+    } else if (this.isProtecting) {
+      // Protect mode: attacks are handled in _handleFollowProtect()
+      // Still run tactics and decision making
     } else {
-      this._basicCombatLoop();
+      // Follow-only mode: NO PvP attacks, only following
+      // Clear any existing targets
+      this.currentTarget = null;
+      if (this.advancedPvp && this.advancedPvp.isAttacking) {
+        try { this.advancedPvp.stop(); } catch(e) {}
+      }
     }
     
-    // Handle follow/protect behaviors
+    // Handle follow/protect behaviors (always, regardless of mode)
     if (this.isFollowing || this.isProtecting) {
       this._handleFollowProtect();
     }
     
-    // Update tactics based on health and combat situation
-    this._updateTactics();
-    
-    // SMARTER: Check if we should chase or retreat
-    this._smartDecisionMaking();
+    // Update tactics based on health and combat situation (skip if follow-only)
+    if (!this.isFollowing || this.isProtecting) {
+      this._updateTactics();
+      this._smartDecisionMaking();
+    }
   }
   
   _smartDecisionMaking() {
-    if (!this.bot.entity || !this.currentTarget || !this.currentTarget.entity) return;
+    if (!this.bot.entity) return;
     
     const health = this.bot.health || 20;
-    const dist = this.bot.entity.position.distanceTo(this.currentTarget.entity.position);
     const food = this.bot.food || 20;
+    const enemies = this._findEnemies();
     
-    // RETREAT if health is low and no food to heal
-    if (health < 6 && food < 10) {
-      this.logger.info('[PvP] Health critical, retreating!');
-      this.bot.setControlState('forward', false);
-      this.bot.setControlState('back', true);
-      setTimeout(() => this.bot.setControlState('back', false), 500);
+    // STRATEGIC DECISIONS based on combat situation
+    if (enemies.length === 0) {
+      // No enemies - stop sprinting, normal state
+      this.bot.setControlState('sprint', false);
       return;
     }
     
-    // CHASE aggressively if target is fleeing
-    if (dist > this.attackRange * 1.5) {
+    // OUTNUMBERED and low health - RETREAT
+    if (enemies.length > 2 && health < 12) {
+      this.logger.info('[PvP] Outnumbered (' + enemies.length + ') and low health (' + health + '), retreating!');
       this.bot.setControlState('sprint', true);
-      this.bot.setControlState('forward', true);
-      this.logger.debug('[PvP] Chasing fleeing target...');
-    }
-    
-    // STRATEGIC RETREAT if outnumbered
-    const enemies = this._findEnemies();
-    if (enemies.length > 2 && health < 15) {
-      this.logger.info('[PvP] Outnumbered and low health, retreating!');
       this.bot.setControlState('forward', false);
       this.bot.setControlState('back', true);
-      setTimeout(() => this.bot.setControlState('back', false), 1000);
+      setTimeout(() => this.bot.setControlState('back', false), 1500);
+      return;
+    }
+    
+    // Health critical - HEAL or RETREAT
+    if (health < 8) {
+      if (food > 10) {
+        this.logger.info('[PvP] Health critical (' + health + '), healing!');
+        this._heal();
+      } else {
+        this.logger.info('[PvP] Health critical and no food, retreating!');
+        this.bot.setControlState('forward', false);
+        this.bot.setControlState('back', true);
+        setTimeout(() => this.bot.setControlState('back', false), 1000);
+        return;
+      }
+    }
+    
+    // TARGET FLEEING - CHASE aggressively
+    if (this.currentTarget && this.currentTarget.entity) {
+      const dist = this.bot.entity.position.distanceTo(this.currentTarget.entity.position);
+      if (dist > this.attackRange * 2) {
+        this.logger.info('[PvP] Target fleeing, chasing aggressively!');
+        this.bot.setControlState('sprint', true);
+        this.bot.setControlState('forward', true);
+        // Bunny hop while chasing
+        if (this.bot.entity.onGround) {
+          this.bot.setControlState('jump', true);
+          setTimeout(() => this.bot.setControlState('jump', false), 100);
+        }
+      }
+    }
+    
+    // MULTIPLE ENEMIES - prioritize weakest
+    if (enemies.length > 1) {
+      this.logger.debug('[PvP] Multiple enemies (' + enemies.length + '), focusing on weakest');
+      // _updateTarget will handle prioritization
+    }
+    
+    // ARMOR CHECK - switch tactics based on enemy armor
+    if (this.currentTarget && this.currentTarget.entity) {
+      const armor = this._getArmorValue(this.currentTarget.entity);
+      if (armor > 15 && health < 15) {
+        this.logger.info('[PvP] Target has high armor (' + armor + '), playing defensively');
+        // Play defensively - less aggressive pursuit
+        this.bot.setControlState('sprint', false);
+      }
     }
   }
 
@@ -874,52 +936,66 @@ class PvPAddon {
 
   _handleFollowProtect() {
     if (!this.followTarget || !this.followTarget.entity) {
-      // Target lost
       this._stopFollow();
       this._stopProtect();
       return;
     }
     
-    // Follow the target using pathfinder if available
-    const dist = this.bot.entity.position.distanceTo(this.followTarget.entity.position);
+    const distToTarget = this.bot.entity.position.distanceTo(this.followTarget.entity.position);
     
-    if (dist > 3) {
-      // Move closer using pathfinder if loaded
+    try { this.bot.lookAt(this.followTarget.entity.position); } catch(e) {}
+    
+    // If protecting, check for threats and attack with FULL PvP
+    if (this.isProtecting) {
+      const threats = this._findThreats();
+      if (threats.length > 0) {
+        const threat = threats[0];
+        this.currentTarget = threat;
+        
+        if (this.useAdvanced && this.advancedPvp && !this.advancedPvp.isAttacking) {
+          try { 
+            this.advancedPvp.attack(threat.entity);
+            const name = threat.username || (threat.entity && threat.entity.name) || 'unknown';
+            this.logger.info('[PvP] Protect mode: Attacking threat ' + name);
+          } catch(e) {
+            this.logger.warn('[PvP] Advanced attack failed: ' + e.message);
+            this._attack(threat);
+          }
+        } else if (threat) {
+          this._attack(threat);
+        }
+        return;
+      }
+    }
+    
+    // Follow the target using pathfinder if available
+    if (distToTarget > 3) {
       if (this.pathfinderLoaded && this.bot.pathfinder) {
         try {
           const { goals } = require('mineflayer-pathfinder');
           const goal = new goals.GoalFollow(this.followTarget.entity, 2);
           this.bot.pathfinder.setGoal(goal);
         } catch(e) {
-          // Fallback to simple movement
           this.bot.setControlState('forward', true);
           this.bot.setControlState('sprint', true);
-          this.bot.lookAt(this.followTarget.entity.position);
         }
       } else {
-        // No pathfinder, use simple movement
         this.bot.setControlState('forward', true);
         this.bot.setControlState('sprint', true);
-        this.bot.lookAt(this.followTarget.entity.position);
       }
     } else {
-      // Close enough, stop pathfinding
       if (this.pathfinderLoaded && this.bot.pathfinder) {
         try { this.bot.pathfinder.setGoal(null); } catch(e) {}
       }
-      // Face the target
-      try { this.bot.lookAt(this.followTarget.entity.position); } catch(e) {}
-    }
-    
-    // If protecting, attack nearby threats
-    if (this.isProtecting) {
-      const threats = this._findThreats();
-      if (threats.length > 0) {
-        const threat = threats[0];
-        if (this.useAdvanced && this.advancedPvp) {
-          try { this.advancedPvp.attack(threat.entity); } catch(e) {}
+      if (this.enableStrafe && !this.useAdvanced) {
+        this.strafeAngle += 0.5;
+        const cos = Math.cos(this.strafeAngle);
+        if (cos > 0) {
+          this.bot.setControlState('right', true);
+          this.bot.setControlState('left', false);
         } else {
-          this._attack(threat);
+          this.bot.setControlState('right', false);
+          this.bot.setControlState('left', true);
         }
       }
     }
