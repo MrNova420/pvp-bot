@@ -1198,8 +1198,8 @@ class PvPAddon {
           this.logger.info('[PvP] Spawned squad bot: ' + botName);
         }
         
-        this.bot.chat('4-bot squad spawning! 3 bots joining now...');
-        this.logger.info('[PvP] 4-bot squad: Owner ' + ownerName + ' + 3 squad bots: BenderHero, DexEasy, Xeazy');
+        this.bot.chat('4-bot squad spawning! 3 bots with gaming names joining now...');
+        this.logger.info('[PvP] 4-bot squad: Owner ' + ownerName + ' + 3 squad bots');
       } catch (e) {
         this.logger.error('[PvP] Failed to spawn squad bots: ' + e.message);
         this.bot.chat('Failed to spawn squad bots: ' + e.message);
