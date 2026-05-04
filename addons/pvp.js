@@ -63,6 +63,23 @@ class PvPAddon {
     // Tactics
     this.currentTactic = 'aggressive'; // aggressive, defensive, hit-and-run
     this.tacticSwitchThreshold = 10; // Health threshold to switch tactics
+    
+    // Realistic gaming name generator
+    this._realisticNames = [
+      'BenderHero', 'DexEasy', 'Xeazy', 'ProGamer', 'NoobSlayer',
+      'L337Gamer', 'XxTryHardxx', 'DarkKnight', 'ShadowFiend',
+      'QuickScope', 'CamperLord', 'RusherX', 'Tactical', 'Aimbot99',
+      'VictoryX', 'Destroyer', 'WarriorX', 'StealthMode', 'FragMaster',
+      'Ghost', 'Phantom', 'Viper', 'Blaze', 'Storm', 'Thunder', 'Lightning',
+      'Shadow', 'Blade', 'Arrow', 'Hunter', 'Predator', 'Sniper', 'Commando',
+      'Ranger', 'Titan', 'Phoenix', 'Griffin', 'Dragon', 'Wolf', 'Bear',
+      'Eagle', 'Falcon', 'Cobra', 'Python', 'Strike', 'Blitz'
+    ];
+  }
+  
+  // Generate realistic gaming name
+  _generateGamingName(index) {
+    return this._realisticNames[index % this._realisticNames.length] + '_' + Math.floor(index / this._realisticNames.length + 1);
   }
 
   init(bot, engine) {
@@ -456,19 +473,22 @@ class PvPAddon {
     this.bot.setControlState('sprint', true);
     this.logger.debug('[PvP] Skill: Sprint ON for speed');
     
-    // If target is too far, sprint towards them
-    if (dist > this.attackRange) {
+    // PERFECT FOLLOW DISTANCE: 0.5-1 block away (not right on ass)
+    if (dist > 1) {
+      // Too far - sprint FASTER
       this.bot.setControlState('forward', true);
+      this.bot.setControlState('sprint', true);
       this.logger.debug('[PvP] Skill: Forward (target too far)');
-    } else if (dist < 2) {
-      // Too close, back off a bit
+    } else if (dist < 0.5) {
+      // Too close - back off to 0.5-1 block distance
       this.bot.setControlState('forward', false);
       this.bot.setControlState('back', true);
       this.logger.debug('[PvP] Skill: Back off (too close)');
       setTimeout(() => {
         this.bot.setControlState('back', false);
         this.bot.setControlState('forward', true);
-      }, 200);
+        this.bot.setControlState('sprint', true);
+      }, 150);
     }
     
     // PRO MOVEMENT: Bunny hopping (jump as soon as you land)
@@ -644,12 +664,18 @@ class PvPAddon {
       
       // Move towards target if too far
       const dist = this.bot.entity.position.distanceTo(target.entity.position);
-      if (dist > this.attackRange) {
+      // PERFECT FOLLOW DISTANCE: 0.5-1 block away
+      if (dist > 1) {
         this.bot.setControlState('forward', true);
-      } else if (dist < 2) {
-        // Too close, back off slightly
+        this.bot.setControlState('sprint', true);
+      } else if (dist < 0.5) {
+        // Too close - back off to 0.5-1 block distance
         this.bot.setControlState('back', true);
-        setTimeout(() => this.bot.setControlState('back', false), 150);
+        setTimeout(() => {
+          this.bot.setControlState('back', false);
+          this.bot.setControlState('forward', true);
+          this.bot.setControlState('sprint', true);
+        }, 150);
       }
       
       this._attack(target);
@@ -1138,26 +1164,27 @@ class PvPAddon {
     
     // Squad command - spawn 4-bot squad (owner + 3 bots)
     if (message.startsWith('!squad')) {
-      this.bot.chat('Squad mode: Spawning 4-bot squad! Owner + 3 bots in smart formation');
+      this.bot.chat('Squad mode: Spawning 4-bot squad! Owner + 3 bots with gaming names');
       this.logger.info('[PvP] Squad command - spawning 3 more bots + owner = 4-bot squad');
       
       try {
         const { spawn } = require('child_process');
-        const squadNames = ['squad1', 'squad2', 'squad3'];
         const ownerName = this.bot.username;
         
-        squadNames.forEach((name, i) => {
+        // Spawn 3 squad bots with realistic gaming names
+        for (let i = 0; i < 3; i++) {
           setTimeout(() => {
+            const botName = this._generateGamingName(i);
             const proc = spawn('node', ['src/engine.js'], {
               cwd: '/home/mrnova420/pvp-bot',
               detached: true,
               stdio: 'ignore',
-              env: { ...process.env, BOT_NAME: name, SQUAD_MODE: 'true' }
+              env: { ...process.env, BOT_NAME: botName, SQUAD_MODE: 'true' }
             });
             proc.unref();
-            this.logger.info('[PvP] Spawned squad bot: ' + name);
+            this.logger.info('[PvP] Spawned squad bot: ' + botName);
           }, i * 3000); // Stagger spawns by 3 seconds
-        });
+        }
         
         this.bot.chat('4-bot squad spawning! 3 bots joining in 9 seconds...');
         this.logger.info('[PvP] 4-bot squad: Owner ' + ownerName + ' + 3 squad bots');
@@ -1168,11 +1195,11 @@ class PvPAddon {
       return;
     }
     
-    // Army command - spawn 100+ bots in smart formation
+    // Army command - spawn 100+ bots with gaming names
     if (message.startsWith('!army')) {
       const parts = message.split(' ');
       const count = parseInt(parts[1]) || 100;
-      this.bot.chat('Army mode: Spawning ' + count + ' bots in smart formation!');
+      this.bot.chat('Army mode: Spawning ' + count + ' bots with gaming names!');
       this.logger.info('[PvP] Army command - spawning ' + count + ' bots');
       
       try {
@@ -1180,7 +1207,7 @@ class PvPAddon {
         
         for (let i = 0; i < count; i++) {
           setTimeout(() => {
-            const botName = 'army_' + (i + 1);
+            const botName = this._generateGamingName(i);
             const proc = spawn('node', ['src/engine.js'], {
               cwd: '/home/mrnova420/pvp-bot',
               detached: true,
@@ -1190,12 +1217,12 @@ class PvPAddon {
             proc.unref();
             
             if (i % 10 === 0) {
-              this.logger.info('[PvP] Spawned army bot ' + (i + 1) + '/' + count);
+              this.logger.info('[PvP] Spawned army bot ' + (i + 1) + '/' + count + ': ' + botName);
             }
           }, i * 100); // Spawn every 100ms
         }
         
-        this.bot.chat('Army of ' + count + ' bots spawning! Will take ~' + Math.ceil(count / 10) + ' seconds');
+        this.bot.chat('Army of ' + count + ' bots spawning with gaming names! Will take ~' + Math.ceil(count / 10) + ' seconds');
       } catch (e) {
         this.logger.warn('[PvP] Failed to spawn army: ' + e.message);
         this.bot.chat('Failed to spawn army: ' + e.message);
