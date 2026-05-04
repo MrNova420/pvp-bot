@@ -278,39 +278,22 @@ class PvPAddon {
     }
     this.lastPhysicsTick = now;
     
-    // MODE SWITCHING FIX: Only run PvP attacks if NOT in follow-only mode
-    // If following without protecting, skip PvP attacks (only follow)
-    // If protecting, we handle attacks in _handleFollowProtect()
-    // If not following, run normal PvP combat
-    if (!this.isFollowing) {
-      // Normal PvP mode - use advanced or basic combat
-      if (this.useAdvanced && this.advancedPvp && this.bot.entity) {
-        this._advancedCombatLoop();
-      } else {
-        this._basicCombatLoop();
-      }
-    } else if (this.isProtecting) {
-      // Protect mode: attacks are handled in _handleFollowProtect()
-      // Still run tactics and decision making
+    // ALWAYS use PvP engine as PRIMARY system
+    // All modes use the same advanced/basic combat system
+    if (this.useAdvanced && this.advancedPvp && this.bot.entity) {
+      this._advancedCombatLoop();
     } else {
-      // Follow-only mode: NO PvP attacks, only following
-      // Clear any existing targets
-      this.currentTarget = null;
-      if (this.advancedPvp && this.advancedPvp.isAttacking) {
-        try { this.advancedPvp.stop(); } catch(e) {}
-      }
+      this._basicCombatLoop();
     }
     
-    // Handle follow/protect behaviors (always, regardless of mode)
+    // Handle follow/protect behaviors (run AFTER combat loop)
     if (this.isFollowing || this.isProtecting) {
       this._handleFollowProtect();
     }
     
-    // Update tactics based on health and combat situation (skip if follow-only)
-    if (!this.isFollowing || this.isProtecting) {
-      this._updateTactics();
-      this._smartDecisionMaking();
-    }
+    // Always run tactics and smart decision making
+    this._updateTactics();
+    this._smartDecisionMaking();
   }
   
   _smartDecisionMaking() {
@@ -471,14 +454,17 @@ class PvPAddon {
     
     // Always sprint for speed - more aggressive
     this.bot.setControlState('sprint', true);
+    this.logger.debug('[PvP] Skill: Sprint ON for speed');
     
     // If target is too far, sprint towards them
     if (dist > this.attackRange) {
       this.bot.setControlState('forward', true);
+      this.logger.debug('[PvP] Skill: Forward (target too far)');
     } else if (dist < 2) {
       // Too close, back off a bit
       this.bot.setControlState('forward', false);
       this.bot.setControlState('back', true);
+      this.logger.debug('[PvP] Skill: Back off (too close)');
       setTimeout(() => {
         this.bot.setControlState('back', false);
         this.bot.setControlState('forward', true);
@@ -488,12 +474,14 @@ class PvPAddon {
     // PRO MOVEMENT: Bunny hopping (jump as soon as you land)
     if (this.bot.entity.onGround && Math.random() < 0.5) {
       this.bot.setControlState('jump', true);
+      this.logger.debug('[PvP] Skill: Bunny hop!');
       setTimeout(() => this.bot.setControlState('jump', false), 80);
     }
     
     // Sprint reset after each hit for maximum knockback
     if (this.enableAntiKB && this.lastAttackTime && Date.now() - this.lastAttackTime < 200) {
       this.bot.setControlState('sprint', false);
+      this.logger.debug('[PvP] Skill: Sprint reset for knockback');
       setTimeout(() => this.bot.setControlState('sprint', true), 50);
     }
     
@@ -501,13 +489,32 @@ class PvPAddon {
     if (Math.random() < 0.25) {
       const strafe = Math.random() > 0.5 ? 'right' : 'left';
       this.bot.setControlState(strafe, true);
+      this.logger.debug('[PvP] Skill: Random strafe ' + strafe);
       setTimeout(() => this.bot.setControlState(strafe, false), 250 + Math.random() * 200);
     }
     
     // Occasionally change direction abruptly (pro technique)
     if (Math.random() < 0.1) {
-      this.bot.setControlState('left', !this.bot.getControlState('left'));
-      this.bot.setControlState('right', !this.bot.getControlState('right'));
+      const newLeft = !this.bot.getControlState('left');
+      const newRight = !this.bot.getControlState('right');
+      this.bot.setControlState('left', newLeft);
+      this.bot.setControlState('right', newRight);
+      this.logger.debug('[PvP] Skill: Direction switch - left:' + newLeft + ' right:' + newRight);
+    }
+    
+    // W-tap after hits
+    if (this.enableWTap && this.lastAttackTime && Date.now() - this.lastAttackTime < 300) {
+      this.bot.setControlState('forward', false);
+      this.logger.debug('[PvP] Skill: W-tap (release forward)');
+      setTimeout(() => {
+        this.bot.setControlState('forward', true);
+        this.logger.debug('[PvP] Skill: W-tap (forward again)');
+        // Double W-tap for extra knockback
+        setTimeout(() => {
+          this.bot.setControlState('forward', false);
+          setTimeout(() => this.bot.setControlState('forward', true), 30);
+        }, 50);
+      }, 30);
     }
   }
 
@@ -943,52 +950,62 @@ class PvPAddon {
     
     const distToTarget = this.bot.entity.position.distanceTo(this.followTarget.entity.position);
     
+    // ALWAYS face the followed player
     try { this.bot.lookAt(this.followTarget.entity.position); } catch(e) {}
     
-    // If protecting, check for threats and attack with FULL PvP
+    // If protecting, FIRST check for threats and attack with FULL PvP
     if (this.isProtecting) {
       const threats = this._findThreats();
       if (threats.length > 0) {
         const threat = threats[0];
         this.currentTarget = threat;
         
-        if (this.useAdvanced && this.advancedPvp && !this.advancedPvp.isAttacking) {
+        // Use FULL PvP ENGINE for combat
+        if (this.useAdvanced && this.advancedPvp) {
           try { 
-            this.advancedPvp.attack(threat.entity);
-            const name = threat.username || (threat.entity && threat.entity.name) || 'unknown';
-            this.logger.info('[PvP] Protect mode: Attacking threat ' + name);
+            if (!this.advancedPvp.isAttacking) {
+              this.advancedPvp.attack(threat.entity);
+              this.logger.info('[PvP] Protect mode: Attacking threat ' + (threat.username || threat.entity?.name));
+            }
+            // Use PvP engine's movement during combat
+            this._enhancePursuit(threat);
           } catch(e) {
-            this.logger.warn('[PvP] Advanced attack failed: ' + e.message);
             this._attack(threat);
           }
-        } else if (threat) {
+        } else {
           this._attack(threat);
         }
         return;
       }
     }
     
-    // Follow the target using pathfinder if available
-    if (distToTarget > 3) {
-      if (this.pathfinderLoaded && this.bot.pathfinder) {
-        try {
-          const { goals } = require('mineflayer-pathfinder');
-          const goal = new goals.GoalFollow(this.followTarget.entity, 2);
-          this.bot.pathfinder.setGoal(goal);
-        } catch(e) {
-          this.bot.setControlState('forward', true);
-          this.bot.setControlState('sprint', true);
-        }
-      } else {
+    // FOLLOW MODE: Use FULL PvP ENGINE movement (not basic)
+    // The PvP engine has the BEST movement - bunny hop, strafe, sprint, etc.
+    
+    // Always sprint for PvP-style movement
+    this.bot.setControlState('sprint', true);
+    
+    if (distToTarget > this.attackRange) {
+      // Too far - move closer with PvP movement
+      this.bot.setControlState('forward', true);
+      
+      // Bunny hop while chasing
+      if (this.bot.entity.onGround && Math.random() < 0.4) {
+        this.bot.setControlState('jump', true);
+        setTimeout(() => this.bot.setControlState('jump', false), 100);
+      }
+    } else if (distToTarget < 2) {
+      // Too close - back off with PvP movement
+      this.bot.setControlState('forward', false);
+      this.bot.setControlState('back', true);
+      setTimeout(() => {
+        this.bot.setControlState('back', false);
         this.bot.setControlState('forward', true);
-        this.bot.setControlState('sprint', true);
-      }
+      }, 200);
     } else {
-      if (this.pathfinderLoaded && this.bot.pathfinder) {
-        try { this.bot.pathfinder.setGoal(null); } catch(e) {}
-      }
-      if (this.enableStrafe && !this.useAdvanced) {
-        this.strafeAngle += 0.5;
+      // Good distance - use PvP strafe around target
+      if (this.enableStrafe) {
+        this.strafeAngle += 0.8;
         const cos = Math.cos(this.strafeAngle);
         if (cos > 0) {
           this.bot.setControlState('right', true);
@@ -997,30 +1014,28 @@ class PvPAddon {
           this.bot.setControlState('right', false);
           this.bot.setControlState('left', true);
         }
+        this.bot.setControlState('forward', true);
+      }
+      
+      // Random PvP-style jumps
+      if (Math.random() < 0.3) {
+        this.bot.setControlState('jump', true);
+        setTimeout(() => this.bot.setControlState('jump', false), 120);
       }
     }
   }
+    
 
+  
   _findThreats() {
     if (!this.bot.entity) return [];
     
     const threats = [];
     const range = 12; // Increased range for better protection
     
-    // Check for hostile mobs - prioritize closer ones
-    for (const entity of Object.values(this.bot.entities)) {
-      if (!entity || (entity.type !== 'mob' && entity.type !== 'hostile')) continue;
-      if (entity.name === 'armor_stand' || entity.name === 'painting' || entity.name === 'item') continue;
-      
-      const dist = this.bot.entity.position.distanceTo(entity.position);
-      if (dist <= range) {
-        threats.push({ 
-          entity: entity, 
-          username: entity.name,
-          score: 100 - dist * 5 // Higher score = more threat
-        });
-      }
-    }
+    // NOTE: Mobs are NOT avoided - they should do their job (follow/protect)
+    // But we AVOID HOSTILE mobs for SAFETY (don't target them)
+    // Only include players as threats (unless friendly fire disabled)
     
     // Check for other players (if protecting from players too)
     for (const username in this.bot.players) {
@@ -1052,6 +1067,15 @@ class PvPAddon {
     // Only owner can use these commands (for safety)
     if (username !== owner) return;
     
+    // Debug: log all commands for testing
+    this.logger.info('[PvP] Chat command received: ' + message + ' from ' + username);
+    
+    // Test command - verify chat is working
+    if (message === '!test') {
+      this.bot.chat('Chat commands are working! PvP mode: ' + (this.enabled ? 'ON' : 'OFF') + ' | Following: ' + (this.isFollowing ? 'YES' : 'NO') + ' | Protecting: ' + (this.isProtecting ? 'YES' : 'NO'));
+      return;
+    }
+    
     // Friendly fire toggle
     if (message === '!ff') {
       this.friendlyFire = !this.friendlyFire;
@@ -1060,14 +1084,13 @@ class PvPAddon {
       return;
     }
     
-    // Follow command - SIMPLIFIED and MORE RESPONSIVE
+    // Follow command
     if (message.startsWith('!follow')) {
       if (this.isFollowing) {
         this._stopFollow();
         this._stopProtect();
         this.bot.chat('Stopped following');
       } else {
-        // Follow the owner by default, or specified player
         const parts = message.split(' ');
         const target = parts[1] || owner;
         const success = this._startFollow(target);
@@ -1078,14 +1101,13 @@ class PvPAddon {
       return;
     }
     
-    // Protect command - MORE AGGRESSIVE
+    // Protect command
     if (message.startsWith('!protect')) {
       if (this.isProtecting) {
         this._stopProtect();
         this._stopFollow();
         this.bot.chat('Stopped protecting');
       } else {
-        // Protect the owner by default, or specified player
         const parts = message.split(' ');
         const target = parts[1] || owner;
         const success = this._startProtect(target);
@@ -1107,10 +1129,78 @@ class PvPAddon {
       }
     }
     
-    // Status command - show combat stats
+    // Status command
     if (message === '!status') {
       const stats = this.combatStats;
       this.bot.chat('PvP Stats - Hits: ' + stats.hits + ' | Misses: ' + stats.misses + ' | Kills: ' + stats.kills);
+      return;
+    }
+    
+    // Squad command - spawn 4-bot squad (owner + 3 bots)
+    if (message.startsWith('!squad')) {
+      this.bot.chat('Squad mode: Spawning 4-bot squad! Owner + 3 bots in smart formation');
+      this.logger.info('[PvP] Squad command - spawning 3 more bots + owner = 4-bot squad');
+      
+      try {
+        const { spawn } = require('child_process');
+        const squadNames = ['squad1', 'squad2', 'squad3'];
+        const ownerName = this.bot.username;
+        
+        squadNames.forEach((name, i) => {
+          setTimeout(() => {
+            const proc = spawn('node', ['src/engine.js'], {
+              cwd: '/home/mrnova420/pvp-bot',
+              detached: true,
+              stdio: 'ignore',
+              env: { ...process.env, BOT_NAME: name, SQUAD_MODE: 'true' }
+            });
+            proc.unref();
+            this.logger.info('[PvP] Spawned squad bot: ' + name);
+          }, i * 3000); // Stagger spawns by 3 seconds
+        });
+        
+        this.bot.chat('4-bot squad spawning! 3 bots joining in 9 seconds...');
+        this.logger.info('[PvP] 4-bot squad: Owner ' + ownerName + ' + 3 squad bots');
+      } catch (e) {
+        this.logger.warn('[PvP] Failed to spawn squad bots: ' + e.message);
+        this.bot.chat('Failed to spawn squad bots: ' + e.message);
+      }
+      return;
+    }
+    
+    // Army command - spawn 100+ bots in smart formation
+    if (message.startsWith('!army')) {
+      const parts = message.split(' ');
+      const count = parseInt(parts[1]) || 100;
+      this.bot.chat('Army mode: Spawning ' + count + ' bots in smart formation!');
+      this.logger.info('[PvP] Army command - spawning ' + count + ' bots');
+      
+      try {
+        const { spawn } = require('child_process');
+        
+        for (let i = 0; i < count; i++) {
+          setTimeout(() => {
+            const botName = 'army_' + (i + 1);
+            const proc = spawn('node', ['src/engine.js'], {
+              cwd: '/home/mrnova420/pvp-bot',
+              detached: true,
+              stdio: 'ignore',
+              env: { ...process.env, BOT_NAME: botName, ARMY_MODE: 'true' }
+            });
+            proc.unref();
+            
+            if (i % 10 === 0) {
+              this.logger.info('[PvP] Spawned army bot ' + (i + 1) + '/' + count);
+            }
+          }, i * 100); // Spawn every 100ms
+        }
+        
+        this.bot.chat('Army of ' + count + ' bots spawning! Will take ~' + Math.ceil(count / 10) + ' seconds');
+      } catch (e) {
+        this.logger.warn('[PvP] Failed to spawn army: ' + e.message);
+        this.bot.chat('Failed to spawn army: ' + e.message);
+      }
+      return;
     }
   }
 }
