@@ -1,65 +1,112 @@
 # PvP Bot - BetterBender Edition
 
-A Minecraft PvP bot powered by BetterBender engine with custom PvP combat addon.
+A powerful Minecraft PvP bot built on the BetterBender engine with custom combat features.
 
 ## Features
 
-- **PvP Combat Mode**: Auto-attack, W-tap, circle strafe, critical hits
-- **AFK Mode**: Keeps server alive with random movements
-- **Auto-Heal**: Automatically eats food when low on health
-- **BetterBender Engine**: Stable 24/7 operation
+- ⚔️ **PvP Combat Mode** - Auto-attack, W-tap, circle strafe, critical hits
+- 🛡️ **AFK Mode** - Keeps server alive with human-like movements  
+- 🍖 **Auto-Heal** - Automatically eats food when low health
+- 🔄 **Auto-Reconnect** - Stays connected 24/7
+- 🎮 **CLI Menu** - Easy management system
 
-## Setup
+## Quick Start
 
 ```bash
+# Install dependencies
 npm install
+
+# Run with CLI menu
+node cli.js
+
+# Or run directly
+node src/engine.js
 ```
 
 ## Configuration
 
-Edit `CONFIG.json` to set:
-- Server host/port
-- Bot username
-- PvP settings (CPS, range, features)
-- Owner username (for commands)
+Edit `CONFIG.json` to customize:
 
-## Commands
-
-In-game chat:
-- `!pvp` - Toggle PvP mode on/off
-- `!status` - Show bot status
-- `!mode afk|player` - Switch mode
-
-## Run
-
-```bash
-node src/engine.js
+```json
+{
+  "server": {
+    "host": "your.server.ip",
+    "port": 25565,
+    "version": "1.20.1"
+  },
+  "auth": {
+    "type": "offline",
+    "username": "YourBotName"
+  },
+  "owner": {
+    "username": "YourUsername"
+  },
+  "pvpMode": {
+    "enabled": true,
+    "autoAttack": true,
+    "attackRange": 4,
+    "cps": 8,
+    "enableCrits": true,
+    "enableStrafe": true,
+    "enableWTap": true,
+    "enableAntiKB": true,
+    "autoHeal": true,
+    "healThreshold": 10
+  }
+}
 ```
 
-Or use the launcher:
-```bash
-node launcher.js
-```
+## In-Game Commands
+
+| Command | Description |
+|---------|-------------|
+| `!pvp` | Toggle PvP mode on/off |
+| `!status` | Show bot status |
+| `!mode afk` | Switch to AFK mode |
+| `!mode pvp` | Switch to PvP mode |
 
 ## PvP Settings
 
-Configurable in `CONFIG.json`:
-```json
-"pvpMode": {
-  "enabled": true,
-  "autoAttack": true,
-  "attackRange": 4,
-  "cps": 8,
-  "enableCrits": true,
-  "enableStrafe": true,
-  "enableWTap": true,
-  "enableAntiKB": true,
-  "autoHeal": true,
-  "healThreshold": 10
-}
-```
+| Setting | Description | Default |
+|---------|-------------|---------|
+| `attackRange` | Attack distance (blocks) | 4 |
+| `cps` | Clicks per second | 8 |
+| `enableCrits` | Jump attacks | true |
+| `enableStrafe` | Circle strafing | true |
+| `enableWTap` | W-tap technique | true |
+| `enableAntiKB` | Anti-knockback | true |
+| `healThreshold` | HP to auto-eat | 10 |
+
+## Addons
+
+The bot supports multiple addons. Enable/disable in CONFIG:
+
+- **pvp** - Combat mode (default)
+- **afk** - AFK mode
+- **player** - Full player simulation
+- **pathfinding** - Navigation
+- **building** - Auto-build
+- **mining** - Auto-mine
+- **crafting** - Auto-craft
+
+## CLI Menu Options
+
+1. Start Bot
+2. Stop Bot  
+3. View Status
+4. Configuration
+5. Exit
+
+## Requirements
+
+- Node.js 18+
+- Minecraft Java Edition server (offline mode)
 
 ## Credits
 
 - BetterBender engine by MrNova420
-- PvP addon custom implementation
+- PvP combat system custom implementation
+
+## License
+
+MIT
