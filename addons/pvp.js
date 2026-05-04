@@ -1171,7 +1171,7 @@ class PvPAddon {
         const { spawn } = require('child_process');
         const ownerName = this.bot.username;
         
-        // Spawn 3 squad bots with realistic gaming names (60s delay to avoid Aternos throttle)
+        // Spawn 3 squad bots with realistic gaming names (15s delay to avoid Aternos throttle)
         for (let i = 0; i < 3; i++) {
           setTimeout(() => {
             const botName = this._generateGamingName(i);
@@ -1196,7 +1196,7 @@ class PvPAddon {
             
             proc.unref();
             this.logger.info('[PvP] Spawned squad bot: ' + botName);
-          }, i * 60000); // 60 seconds between spawns
+          }, i * 15000); // 15 seconds between spawns
         }
         
         this.bot.chat('4-bot squad spawning! 3 bots with gaming names joining now...');
