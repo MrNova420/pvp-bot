@@ -1,18 +1,21 @@
 {
   "lastPosition": {
-    "x": -79.44998824540933,
-    "y": 87.00133597911214,
-    "z": -591.5329386312679,
+    "x": -33.7,
+    "y": 99,
+    "z": -612.3,
     "dimension": "overworld"
   },
   "currentMode": "afk",
   "currentActivity": null,
   "inventory": [],
   "exploredChunks": [
-    "-5,-37"
+    "-5,-37",
+    "NaN,NaN",
+    "-6,-38",
+    "-3,-39"
   ],
   "landmarks": [],
   "playerRelationships": {},
   "workProgress": {},
-  "lastSaveTime": "2026-05-04T16:22:06.930Z"
+  "lastSaveTime": "2026-05-04T16:56:20.069Z"
 }
