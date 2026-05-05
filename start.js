@@ -53,14 +53,28 @@ async function main() {
     config.combat = { ...config.combat, ...presetConfig.combat };
   }
   
-  console.log(`\n🚀 Starting with ${preset} preset...\n`);
-  
-  fs.writeFileSync(configPath, JSON.stringify(config, null, 2));
-  
-  const bot = spawn('node', ['index.js'], { 
-    stdio: 'inherit', 
-    cwd: __dirname 
-  });
+    console.log(`\n🚀 Starting with ${preset} preset...\n`);
+    
+    // Ask about proxy usage
+    const useProxy = await question('Use proxies to avoid Aternos throttling? (y/N): ') || 'n';
+    const useProxyBool = useProxy.toLowerCase() === 'y' || useProxy.toLowerCase() === 'yes';
+    
+    fs.writeFileSync(configPath, JSON.stringify(config, null, 2));
+    
+    // Prepare environment variables
+    const env = { ...process.env };
+    if (useProxyBool) {
+      env.USE_PROXY = 'true';
+      console.log('🔌 Proxy support ENABLED - each bot will use a different free proxy');
+    } else {
+      console.log('🔌 Proxy support DISABLED - using direct connections');
+    }
+    
+    const bot = spawn('node', ['index.js'], { 
+      stdio: 'inherit', 
+      cwd: __dirname,
+      env: env
+    });
   
   bot.on('exit', (code) => {
     process.exit(code);
