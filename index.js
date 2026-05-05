@@ -27,9 +27,10 @@ if (!fs2.existsSync(configPath)) {
   console.log('📄 Config: ' + configPath);
   console.log('');
   
-  const engine = new PvPEngine(configPath);
-  
-  engine.start();
+   const config = JSON.parse(fs.readFileSync(configPath, 'utf8'));
+   const engine = new PvPEngine(config);
+   
+   engine.start();
   
   process.on('SIGINT', () => {
     console.log('\n🛑 Stopping...');

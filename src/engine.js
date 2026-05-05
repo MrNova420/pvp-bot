@@ -49,6 +49,7 @@ class BotEngine {
   stopAllChildren() {
     this.logger.info(`Stopping ${this.spawnedChildren.length} spawned child processes`);
     for (const child of this.spawnedChildren) {
+      this.logger.debug(`Stopping child process ${child.pid}`);
       try {
         if (!child.killed) {
           child.kill('SIGINT');
