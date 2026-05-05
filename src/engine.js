@@ -85,7 +85,7 @@ class BotEngine {
     this._connect();
   }
   
-  _connect() {
+  async _connect() {
     if (this.shuttingDown) return;
     
     const authOptions = getAuthOptions(this.config.auth);
@@ -101,6 +101,21 @@ class BotEngine {
     
     if (authOptions.password) {
       botOptions.password = authOptions.password;
+    }
+    
+    // Use proxy if env var is set
+    if (process.env.USE_PROXY === 'true') {
+      try {
+        const ProxyManager = require('./utils/proxyManager');
+        const proxySocket = await ProxyManager.createProxiedSocket(
+          this.config.server.host,
+          this.config.server.port
+        );
+        botOptions.client = proxySocket;
+        this.logger.info('Using proxy connection');
+      } catch (e) {
+        this.logger.warn(`Failed to create proxy connection: ${e.message}, falling back to direct connection`);
+      }
     }
     
     this.logger.info(`Connecting to ${this.config.server.host}:${this.config.server.port} as ${authOptions.username}`);

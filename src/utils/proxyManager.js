@@ -1,5 +1,6 @@
 const https = require('https');
 const socks = require('socks');
+const net = require('net');
 
 class ProxyManager {
   constructor() {
@@ -93,6 +94,35 @@ class ProxyManager {
     const proxy = proxies[this.currentIndex % proxies.length];
     this.currentIndex++;
     return proxy;
+  }
+  
+  // Create a socket that connects through a SOCKS5 proxy
+  async createProxiedSocket(targetHost, targetPort) {
+    const proxy = await this.getNextProxy();
+    if (!proxy) {
+      throw new Error('No proxy available');
+    }
+    
+    const proxyUrl = new URL(proxy);
+    
+    return new Promise((resolve, reject) => {
+      const socket = socks.createConnection({
+        host: proxyUrl.hostname,
+        port: parseInt(proxyUrl.port),
+        targetHost: targetHost,
+        targetPort: targetPort
+      }, (err, socket) => {
+        if (err) {
+          reject(err);
+        } else {
+          resolve(socket);
+        }
+      });
+      
+      socket.on('error', (err) => {
+        reject(err);
+      });
+    });
   }
 }
 

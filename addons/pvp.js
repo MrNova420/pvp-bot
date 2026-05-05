@@ -1169,25 +1169,19 @@ class PvPAddon {
       
       try {
         const { spawn } = require('child_process');
-        const ProxyManager = require('./src/utils/proxyManager');
         const ownerName = this.bot.username;
-        
-        // Fetch proxies for squad bots
-        const proxies = await ProxyManager.fetchProxies();
-        this.logger.info('[PvP] Fetched ' + proxies.length + ' proxies for squad');
         
         // Spawn 3 squad bots with realistic gaming names (15s delay to avoid Aternos throttle)
         for (let i = 0; i < 3; i++) {
           setTimeout(() => {
             const botName = this._generateGamingName(i);
-            const proxy = proxies[i % proxies.length] || null;
-            this.logger.info('[PvP] Spawning squad bot: ' + botName + (proxy ? ' via ' + proxy : ' (no proxy)'));
+            this.logger.info('[PvP] Spawning squad bot: ' + botName);
             
             const proc = spawn('node', ['src/engine.js'], {
               cwd: '/home/mrnova420/pvp-bot',
               detached: true,
               stdio: 'ignore',
-              env: { ...process.env, BOT_NAME: botName, SQUAD_MODE: 'true', PROXY_URL: proxy || '' }
+              env: { ...process.env, BOT_NAME: botName, SQUAD_MODE: 'true', USE_PROXY: 'true' }
             });
             
             proc.on('error', (err) => {
@@ -1223,24 +1217,18 @@ class PvPAddon {
       
       try {
         const { spawn } = require('child_process');
-        const ProxyManager = require('./src/utils/proxyManager');
         let spawned = 0;
-        
-        // Fetch proxies for army bots
-        const proxies = await ProxyManager.fetchProxies();
-        this.logger.info('[PvP] Fetched ' + proxies.length + ' proxies for army');
         
         for (let i = 0; i < count; i++) {
           setTimeout(() => {
             const botName = this._generateGamingName(i);
-            const proxy = proxies[i % proxies.length] || null;
-            this.logger.info('[PvP] Spawning army bot ' + (i + 1) + '/' + count + ': ' + botName + (proxy ? ' via ' + proxy : ' (no proxy)'));
+            this.logger.info('[PvP] Spawning army bot ' + (i + 1) + '/' + count + ': ' + botName);
             
             const proc = spawn('node', ['src/engine.js'], {
               cwd: '/home/mrnova420/pvp-bot',
               detached: true,
               stdio: 'ignore',
-              env: { ...process.env, BOT_NAME: botName, ARMY_MODE: 'true', PROXY_URL: proxy || '' }
+              env: { ...process.env, BOT_NAME: botName, ARMY_MODE: 'true', USE_PROXY: 'true' }
             });
             
             proc.on('error', (err) => {
