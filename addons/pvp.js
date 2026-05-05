@@ -36,8 +36,9 @@ class PvPAddon {
     this.lastPhysicsTick = 0;
     this.physicsTickInterval = 50; // Target 20 ticks/sec
     
-    // Friendly fire
+     // Friendly fire
     this.friendlyFire = false;
+    this.friendlyBots = new Set(); // Track known friendly bot names (for squad/army)
     
     // Follow/Protect states
     this.isFollowing = false;
@@ -586,39 +587,60 @@ class PvPAddon {
     }, enemies[0]);
   }
 
-  _calculateTargetScore(player) {
-    if (!player || !player.entity) return -1;
-    
-    const dist = this.bot.entity.position.distanceTo(player.entity.position);
-    const health = player.entity.health || 20;
-    const armor = this._getArmorValue(player.entity);
-    
-    // Distance score - closer is better, but not too close
-    let distanceScore = 0;
-    if (dist < 2) {
-      distanceScore = 50; // Too close, harder to hit
-    } else if (dist <= this.attackRange) {
-      distanceScore = 100 - dist * 10; // Optimal range
-    } else if (dist <= this.chaseRange) {
-      distanceScore = 30 - (dist - this.attackRange) * 2; // Still chase but lower priority
-    } else {
-      return -1; // Out of range
-    }
-    
-    // Health score - lower health = easier target
-    const healthScore = (20 - health) * 8; // More weight on health
-    
-    // Armor penalty - harder to kill targets with good armor
-    const armorPenalty = armor * 3;
-    
-    // Prefer targets that are already attacking us
-    const aggressionScore = 0; // TODO: implement combat log tracking
-    
-    // Weapon consideration - targets with better weapons are more dangerous
-    const weaponThreat = this._getWeaponThreat(player.entity);
-    
-    return distanceScore + healthScore - armorPenalty + aggressionScore + weaponThreat;
-  }
+   _calculateTargetScore(player) {
+     if (!player || !player.entity) return -1;
+     
+     const dist = this.bot.entity.position.distanceTo(player.entity.position);
+     const health = player.entity.health || 20;
+     const hunger = player.entity.food || 20;
+     const armor = this._getArmorValue(player.entity);
+     
+     // Distance score (10% weight) - closer is better, but not too close
+     let distanceScore = 0;
+     if (dist < 2) {
+       distanceScore = 50; // Too close, harder to hit
+     } else if (dist <= this.attackRange) {
+       distanceScore = 100 - dist * 10; // Optimal range
+     } else if (dist <= this.chaseRange) {
+       distanceScore = 30 - (dist - this.attackRange) * 2; // Still chase but lower priority
+     } else {
+       return -1; // Out of range
+     }
+     
+     // Health score (25% weight) - lower health = easier target
+     const healthScore = (20 - health) * 8; // More weight on health
+     
+     // Hunger score (5% weight) - lower hunger = more vulnerable
+     const hungerScore = (20 - hunger) * 2;
+     
+     // Armor penalty (15% weight) - harder to kill targets with good armor
+     const armorPenalty = armor * 3;
+     
+     // Aggression score (10% weight) - prefer targets that are already attacking us
+     const aggressionScore = this._getAggressionScore(player);
+     
+     // Weapon threat score (15% weight) - targets with better weapons are more dangerous
+     const weaponThreat = this._getWeaponThreat(player.entity) * 1.5;
+     
+     // Opportunity score (20% weight) - isolation, distraction, low visibility
+     const opportunityScore = this._getOpportunityScore(player);
+     
+     // Environmental advantage score (15% weight) - positional advantage, escape routes
+     const environmentalScore = this._getEnvironmentalAdvantageScore(player.entity);
+     
+     // Apply weights and return final score
+     const finalScore = 
+       (distanceScore * 0.10) +      // Distance: 10%
+       (healthScore * 0.25) +        // Health: 25%
+       (hungerScore * 0.05) +        // Hunger: 5%
+       (armorPenalty * 0.15) +       // Armor penalty: 15%
+       (aggressionScore * 0.10) +    // Aggression: 10%
+       (weaponThreat * 0.15) +       // Weapon threat: 15%
+       (opportunityScore * 0.20) +   // Opportunity: 20%
+       (environmentalScore * 0.15);  // Environmental: 15%
+     
+     return finalScore;
+   }
   
   _getArmorValue(entity) {
     if (!entity || !entity.getEquipment) return 0;
@@ -645,11 +667,129 @@ class PvPAddon {
         'netherite_sword': 20
       };
       
-      return damageMap[weapon.name] || 0;
-    } catch(e) {
-      return 0;
-    }
-  }
+       return damageMap[weapon.name] || 0;
+     } catch(e) {
+       return 0;
+     }
+   }
+   
+   _getAggressionScore(player) {
+     // Check if player has recently attacked us or our allies
+     // This would require combat log tracking - simplified for now
+     // In a full implementation, we'd track recent hits received
+     return 0; // Placeholder - can be enhanced with combat logging
+   }
+   
+   _getOpportunityScore(player) {
+     // Check for target isolation, distraction, low visibility
+     // Simplified implementation - can be enhanced
+     const dist = this.bot.entity.position.distanceTo(player.entity.position);
+     
+     // Prefer isolated targets (fewer nearby allies)
+     let isolationScore = 0;
+     const nearbyAllies = this._countNearbyAllies(player.entity.position);
+     if (nearbyAllies === 0) {
+       isolationScore = 30; // Completely isolated
+     } else if (nearbyAllies <= 2) {
+       isolationScore = 15; // Somewhat isolated
+     }
+     
+     // Prefer distracted targets (not looking at us)
+     const distractionScore = this._isDistracted(player) ? 20 : 0;
+     
+     // Prefer targets with low visibility (behind cover, in darkness)
+     const visibilityScore = this._getVisibilityScore(player.entity) ? 15 : 0;
+     
+     return isolationScore + distractionScore + visibilityScore;
+   }
+   
+   _countNearbyAllies(position) {
+     let count = 0;
+     const range = 10; // Check for allies within 10 blocks
+     
+     for (const username in this.bot.players) {
+       const player = this.bot.players[username];
+       if (!player || !player.entity) continue;
+       if (username === this.bot.username) continue;
+       
+       const dist = player.entity.position.distanceTo(position);
+       if (dist <= range) {
+         // Check if it's a friendly bot or player (if FF disabled)
+         if (this.friendlyFire || 
+             username === this.engine.config.owner?.username ||
+             this.friendlyBots.has(username)) {
+           count++;
+         }
+       }
+     }
+     return count;
+   }
+   
+   _isDistracted(player) {
+     // Simplified: check if target is looking away from us
+     // In a full implementation, we'd check yaw/pitch differences
+     return Math.random() > 0.7; // 30% chance of being distracted (placeholder)
+   }
+   
+   _getVisibilityScore(entity) {
+     // Simplified: check if target is in darkness or behind cover
+     // In a full implementation, we'd check light level and blocks between
+     return Math.random() > 0.6; // 40% chance of low visibility (placeholder)
+   }
+   
+   _getEnvironmentalAdvantageScore(entity) {
+     // Score based on target's positional disadvantage
+     // Prefer targets with poor positioning (near edges, in holes, etc.)
+     if (!entity) return 0;
+     
+     const pos = entity.position;
+     let score = 0;
+     
+     // Prefer targets near edges (easier to knock back)
+     const edgeThreshold = 2;
+     if (pos.x < edgeThreshold || pos.z < edgeThreshold || 
+         pos.x > this.bot.worldSize?.width - edgeThreshold || 
+         pos.z > this.bot.worldSize?.depth - edgeThreshold) {
+       score += 20;
+     }
+     
+     // Prefer targets in holes or pits (harder to escape)
+     const groundY = this.bot.world?.getHighestBlockAt(new this.bot. Vec3(pos.x, 0, pos.z))?.y || 64;
+     if (pos.y < groundY - 2) {
+       score += 25; // In a hole
+     }
+     
+     // Prefer targets near environmental hazards (lava, water) - risky for them
+     const hazardCheck = this._checkNearbyHazards(entity);
+     score += hazardCheck * 10;
+     
+     return Math.min(score, 50); // Cap at 50
+   }
+   
+   _checkNearbyHazards(entity) {
+     // Check for nearby lava, water, cliffs that put target at risk
+     // Simplified implementation
+     if (!entity || !entity.entity) return 0;
+     
+     const pos = entity.entity.position;
+     let hazards = 0;
+     
+     // Check surrounding blocks for hazards (simplified)
+     // In a full implementation, we'd check actual block types
+     const checkRange = 3;
+     for (let dx = -checkRange; dx <= checkRange; dx++) {
+       for (let dz = -checkRange; dz <= checkRange; dz++) {
+         for (let dy = -2; dy <= 2; dy++) {
+           // Simplified hazard detection
+           if (Math.random() > 0.9) { // 10% chance per block of hazard
+             hazards++;
+           }
+         }
+       }
+     }
+     
+     return Math.min(hazards / 10, 5); // Normalize and cap
+   }
 
   _basicCombatLoop() {
     if (!this.enabled) return;
@@ -698,18 +838,21 @@ class PvPAddon {
     const enemies = [];
     const owner = this.engine.config.owner?.username;
     
-    // Only target players, NOT mobs
-    for (const username in this.bot.players) {
-      const player = this.bot.players[username];
-      if (!player.entity) continue;
-      if (username === this.bot.username) continue; // Don't target self
-      if (!this.friendlyFire && username === owner) continue; // Skip owner if friendly fire disabled
-      
-      const dist = this.bot.entity.position.distanceTo(player.entity.position);
-      if (dist <= range) {
-        enemies.push(player);
-      }
-    }
+     // Only target players, NOT mobs
+     for (const username in this.bot.players) {
+       const player = this.bot.players[username];
+       if (!player.entity) continue;
+       if (username === this.bot.username) continue; // Don't target self
+       // Skip owner if friendly fire disabled
+       if (!this.friendlyFire && username === owner) continue;
+       // Skip friendly bots (squad/army) if friendly fire disabled
+       if (!this.friendlyFire && this.friendlyBots.has(username)) continue;
+       
+       const dist = this.bot.entity.position.distanceTo(player.entity.position);
+       if (dist <= range) {
+         enemies.push(player);
+       }
+     }
     
     // Sort by score (best target first) - SMARTER than just distance
     enemies.sort((a, b) => {
@@ -1163,7 +1306,7 @@ class PvPAddon {
                cwd: '/home/mrnova420/pvp-bot',
                detached: true,
                stdio: 'ignore',
-               env: { ...process.env, BOT_NAME: botName, SQUAD_MODE: 'true', USE_PROXY: 'true' }
+               env: { ...process.env, BOT_NAME: botName, SQUAD_MODE: 'true', USE_PROXY: 'true', FRIENDLY_FIRE: this.friendlyFire.toString() }
              });
              this.engine.trackChildProcess(proc);
             
@@ -1177,8 +1320,9 @@ class PvPAddon {
               }
             });
             
-            proc.unref();
-            this.logger.info('[PvP] Spawned squad bot: ' + botName);
+             proc.unref();
+             this.logger.info('[PvP] Spawned squad bot: ' + botName);
+             this.friendlyBots.add(botName);
           }, i * 15000); // 15 seconds between spawns
         }
         
@@ -1207,12 +1351,12 @@ class PvPAddon {
             const botName = this._generateGamingName(i);
             this.logger.info('[PvP] Spawning army bot ' + (i + 1) + '/' + count + ': ' + botName);
             
-             const proc = spawn('node', ['src/engine.js'], {
-               cwd: '/home/mrnova420/pvp-bot',
-               detached: true,
-               stdio: 'ignore',
-               env: { ...process.env, BOT_NAME: botName, ARMY_MODE: 'true', USE_PROXY: 'true' }
-             });
+              const proc = spawn('node', ['src/engine.js'], {
+                cwd: '/home/mrnova420/pvp-bot',
+                detached: true,
+                stdio: 'ignore',
+                env: { ...process.env, BOT_NAME: botName, ARMY_MODE: 'true', USE_PROXY: 'true', FRIENDLY_FIRE: this.friendlyFire.toString() }
+              });
              this.engine.trackChildProcess(proc);
             
             proc.on('error', (err) => {
@@ -1225,8 +1369,9 @@ class PvPAddon {
               }
             });
             
-            proc.unref();
-            spawned++;
+              proc.unref();
+              this.friendlyBots.add(botName);
+              spawned++;
             
             if (spawned % 10 === 0) {
               this.logger.info('[PvP] Spawned ' + spawned + '/' + count + ' army bots so far');
