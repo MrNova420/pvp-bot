@@ -117,12 +117,26 @@ async function startBot() {
     return;
   }
   
+  // Ask about proxy usage
+  const useProxy = await question('\nUse proxies to avoid Aternos throttling? (y/N): ') || 'n';
+  const useProxyBool = useProxy.toLowerCase() === 'y' || useProxy.toLowerCase() === 'yes';
+  
   console.log('\n🚀 Starting bot...');
+  
+  // Prepare environment variables
+  const env = { ...process.env };
+  if (useProxyBool) {
+    env.USE_PROXY = 'true';
+    console.log('🔌 Proxy support ENABLED - each bot will use a different free proxy');
+  } else {
+    console.log('🔌 Proxy support DISABLED - using direct connections');
+  }
   
   engineProcess = spawn('node', ['src/engine.js'], {
     stdio: 'inherit',
     cwd: __dirname,
-    detached: false
+    detached: false,
+    env: env
   });
   
   engineProcess.on('exit', (code) => {
@@ -138,8 +152,16 @@ async function stopBot() {
   }
   
   console.log('\n⏹️ Stopping bot...');
-  engineProcess.kill('SIGINT');
-  engineProcess = null;
+  
+  return new Promise((resolve) => {
+    engineProcess.once('exit', (code) => {
+      console.log(`\n⚠️ Bot stopped (code: ${code})`);
+      engineProcess = null;
+      resolve();
+    });
+    
+    engineProcess.kill('SIGINT');
+  });
 }
 
 async function runSetup() {
@@ -291,17 +313,18 @@ async function showHelp() {
   console.log('  4. Enter YOUR username (to protect)');
   console.log('  5. Run: node src/engine.js');
   console.log('');
-  console.log('⚔️  Combat Features:');
-  console.log('  - W-tap: Sprint reset for max knockback');
-  console.log('  - Anti-KB: Reduce knockback when hit');
-  console.log('  - Crits: Critical hit attacks');
-  console.log('  - Strafe: Circle movement');
-  console.log('');
-  console.log('🎭 Presets:');
-  console.log('  - Balanced: Recommended');
-  console.log('  - Aggressive: Max damage');
-  console.log('  - Defensive: Safe play');
-  console.log('');
+   console.log('⚔️  Combat Features:');
+   console.log('  - W-tap: Sprint reset for max knockback');
+   console.log('  - Anti-KB: Reduce knockback when hit');
+   console.log('  - Crits: Critical hit attacks');
+   console.log('  - Strafe: Circle movement');
+   console.log('  - Guard: Follow and protect target (!guard)');
+   console.log('');
+   console.log('🎭 Presets:');
+   console.log('  - Balanced: Recommended');
+   console.log('  - Aggressive: Max damage');
+   console.log('  - Defensive: Safe play');
+   console.log('');
   console.log('📁 Files:');
   console.log('  - CONFIG.json: Bot configuration');
   console.log('  - configs/: Combat presets');

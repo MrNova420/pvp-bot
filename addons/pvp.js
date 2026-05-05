@@ -1110,35 +1110,17 @@ class PvPAddon {
       return;
     }
     
-    // Follow command
-    if (message.startsWith('!follow')) {
-      if (this.isFollowing) {
-        this._stopFollow();
-        this._stopProtect();
-        this.bot.chat('Stopped following');
-      } else {
-        const parts = message.split(' ');
-        const target = parts[1] || owner;
-        const success = this._startFollow(target);
-        if (success) {
-          this.bot.chat('Following ' + target + ' - will chase and stay close');
-        }
-      }
-      return;
-    }
-    
-    // Protect command
-    if (message.startsWith('!protect')) {
+     // Guard command - toggles protecting (which includes following behavior)
+    if (message.startsWith('!guard')) {
       if (this.isProtecting) {
         this._stopProtect();
-        this._stopFollow();
-        this.bot.chat('Stopped protecting');
+        this.bot.chat('Stopped guarding');
       } else {
         const parts = message.split(' ');
         const target = parts[1] || owner;
         const success = this._startProtect(target);
         if (success) {
-          this.bot.chat('Protecting ' + target + ' - will attack nearby threats!');
+          this.bot.chat('Guarding ' + target + ' - will follow and attack threats!');
         }
       }
       return;
@@ -1177,12 +1159,13 @@ class PvPAddon {
             const botName = this._generateGamingName(i);
             this.logger.info('[PvP] Spawning squad bot: ' + botName);
             
-            const proc = spawn('node', ['src/engine.js'], {
-              cwd: '/home/mrnova420/pvp-bot',
-              detached: true,
-              stdio: 'ignore',
-              env: { ...process.env, BOT_NAME: botName, SQUAD_MODE: 'true', USE_PROXY: 'true' }
-            });
+             const proc = spawn('node', ['src/engine.js'], {
+               cwd: '/home/mrnova420/pvp-bot',
+               detached: true,
+               stdio: 'ignore',
+               env: { ...process.env, BOT_NAME: botName, SQUAD_MODE: 'true', USE_PROXY: 'true' }
+             });
+             this.engine.trackChildProcess(proc);
             
             proc.on('error', (err) => {
               this.logger.error('[PvP] Failed to spawn squad bot ' + botName + ': ' + err.message);
@@ -1224,12 +1207,13 @@ class PvPAddon {
             const botName = this._generateGamingName(i);
             this.logger.info('[PvP] Spawning army bot ' + (i + 1) + '/' + count + ': ' + botName);
             
-            const proc = spawn('node', ['src/engine.js'], {
-              cwd: '/home/mrnova420/pvp-bot',
-              detached: true,
-              stdio: 'ignore',
-              env: { ...process.env, BOT_NAME: botName, ARMY_MODE: 'true', USE_PROXY: 'true' }
-            });
+             const proc = spawn('node', ['src/engine.js'], {
+               cwd: '/home/mrnova420/pvp-bot',
+               detached: true,
+               stdio: 'ignore',
+               env: { ...process.env, BOT_NAME: botName, ARMY_MODE: 'true', USE_PROXY: 'true' }
+             });
+             this.engine.trackChildProcess(proc);
             
             proc.on('error', (err) => {
               this.logger.error('[PvP] Failed to spawn army bot ' + botName + ': ' + err.message);

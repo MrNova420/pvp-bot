@@ -26,9 +26,38 @@ class BotEngine {
     this.running = false;
     this.shuttingDown = false;
     this.eventHandlers = new Map();
+    this.spawnedChildren = []; // Track spawned child processes for cleanup
     
     this._setupSafetyCallbacks();
     this._setupSignalHandlers();
+  }
+
+  trackChildProcess(childProcess) {
+    this.spawnedChildren.push(childProcess);
+    this.logger.debug(`Tracking child process: ${childProcess.pid}`);
+    
+    // Also listen for exit to clean up tracking
+    childProcess.on('exit', (code, signal) => {
+      this.logger.debug(`Child process ${childProcess.pid} exited with code ${code}`);
+      const index = this.spawnedChildren.indexOf(childProcess);
+      if (index > -1) {
+        this.spawnedChildren.splice(index, 1);
+      }
+    });
+  }
+
+  stopAllChildren() {
+    this.logger.info(`Stopping ${this.spawnedChildren.length} spawned child processes`);
+    for (const child of this.spawnedChildren) {
+      try {
+        if (!child.killed) {
+          child.kill('SIGINT');
+        }
+      } catch (err) {
+        this.logger.error(`Failed to kill child process ${child.pid}:`, err.message);
+      }
+    }
+    this.spawnedChildren = [];
   }
   
   _setupSafetyCallbacks() {
@@ -371,6 +400,9 @@ class BotEngine {
     
     this.logger.info(`Handling disconnect: ${reason}`);
     
+    // Stop all spawned child processes on disconnect
+    this.stopAllChildren();
+    
     for (const [name, addon] of this.addons) {
       if (addon.cleanup) {
         try {
@@ -426,6 +458,9 @@ class BotEngine {
     
     this.shuttingDown = true;
     this.logger.info('Stopping bot...');
+    
+    // Stop all spawned child processes first
+    this.stopAllChildren();
     
     this.reconnectManager.cancel();
     
