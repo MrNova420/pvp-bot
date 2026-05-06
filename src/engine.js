@@ -181,7 +181,7 @@ class BotEngine {
   
   // Admin methods
   isAdmin(username) {
-    return this.admins.has(username);
+    return this.admins.has(username) || username === this.config.owner?.username;
   }
   
   addAdmin(username) {
@@ -742,12 +742,18 @@ class BotEngine {
         addon.init(this.bot, this);
         this.logger.info(`Addon initialized: ${name}`);
         
-        // Auto-enable addon if it matches current mode
-        // Special case: a1-bot addon should auto-enable when mode is "pvp"
-        if ((name === this.currentMode || (this.currentMode === 'pvp' && name === 'a1-bot')) && addon.enable) {
+        // Auto-enable addon - mode matching for mode-specific addons
+        // Special case: a1-bot should auto-enable when mode is 'pvp' or 'a1-bot'
+        // Other addons (super-pathfinder, player, etc) enable when loaded
+        const shouldAutoEnable = (name === this.currentMode) || 
+                                (this.currentMode === 'pvp' && name === 'a1-bot') ||
+                                (this.currentMode === 'a1-bot' && name === 'a1-bot') ||
+                                (name !== this.currentMode && this.config.addons[name]);
+        
+        if (shouldAutoEnable && addon.enable) {
           setTimeout(() => {
             addon.enable();
-            this.logger.info(`Auto-enabled ${name} mode addon`);
+            this.logger.info(`Auto-enabled ${name} addon`);
           }, 500);
         }
       } catch (err) {

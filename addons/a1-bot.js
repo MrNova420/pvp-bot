@@ -126,7 +126,7 @@ class A1BotAddon {
   init(bot, engine) {
     this.bot = bot;
     this.engine = engine;
-    this.logger = engine.getLogger();
+    this.logger = engine.logger;
     
     // From soldier.js - get dependencies
     this.commandHandler = engine.commandHandler;

@@ -181,7 +181,7 @@ async function showMainMenu() {
   }
   
   if (choice !== '9') {
-    await showMainMenu();
+await spawnMultiBots(5);
   }
 }
 
@@ -435,37 +435,41 @@ function generateBotName(index) {
   return prefix + mid + suffix + index;
 }
 
-async function spawnMultiBots() {
+async function spawnMultiBots(initialCount = null) {
   console.log('\n╔═══════════════════════════════════════╗');
   console.log('║          MULTI-BOT SPAWNER          ║');
   console.log('╚═══════════════════════════════════╝');
   console.log('');
-  console.log('How many bots to spawn?');
-  console.log('  1. 5 bots (Squad)');
-  console.log('  2. 10 bots (Small Army)');
-  console.log('  3. 50 bots (Large Army)');
-  console.log('  4. 100 bots (Maximum)');
-  console.log('  5. Custom amount');
-  console.log('');
   
-  const choice = await question('Select: ');
+  let count = initialCount || 5;
   
-  let count = 5;
-  switch (choice) {
-    case '1': count = 5; break;
-    case '2': count = 10; break;
-    case '3': count = 50; break;
-    case '4': count = 100; break;
-    case '5':
-      const custom = await question('Enter number (1-100): ');
-      count = Math.min(parseInt(custom) || 5, 100);
-      break;
-    default:
-      console.log('Invalid choice, defaulting to 5');
-      count = 5;
+  if (initialCount === null) {
+    console.log('How many bots to spawn?');
+    console.log('  1. 5 bots (Squad)');
+    console.log('  2. 10 bots (Small Army)');
+    console.log('  3. 50 bots (Large Army)');
+    console.log('  4. 100 bots (Maximum)');
+    console.log('  5. Custom amount');
+    console.log('');
+    
+    const choice = await question('Select: ');
+    
+    switch (choice) {
+      case '1': count = 5; break;
+      case '2': count = 10; break;
+      case '3': count = 50; break;
+      case '4': count = 100; break;
+      case '5':
+        const custom = await question('Enter number (1-100): ');
+        count = Math.min(parseInt(custom) || 5, 100);
+        break;
+      default:
+        console.log('Invalid choice, defaulting to 5');
+        count = 5;
+    }
   }
   
-  const useProxy = await question('\nUse proxy? (y/N): ') || 'n';
+  const useProxy = initialCount !== null ? 'n' : (await question('\nUse proxy? (y/N): ') || 'n');
   const useProxyBool = useProxy.toLowerCase() === 'y' || useProxy.toLowerCase() === 'yes';
   
   console.log('\n🤖 Spawning ' + count + ' bots...');
@@ -487,7 +491,7 @@ async function spawnMultiBots() {
       const proc = spawn('node', ['src/engine.js'], {
         cwd: __dirname,
         detached: true,
-        stdio: 'ignore',
+stdio: 'ignore',
         env: env
       });
       

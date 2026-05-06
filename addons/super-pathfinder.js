@@ -21,7 +21,7 @@ class SuperPathfinderAddon {
   init(bot, engine) {
     this.bot = bot;
     this.engine = engine;
-    this.logger = engine.getLogger();
+    this.logger = engine.logger;
     
     try {
       const { pathfinder, Movements, goals } = require('mineflayer-pathfinder');

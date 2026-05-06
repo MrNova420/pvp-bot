@@ -67,7 +67,7 @@ class CommandHandler {
           return 'Cannot see you';
         }
         
-        const pathfinder = this.engine.addons.get('pathfinding');
+        const pathfinder = this.engine.addons.get('super-pathfinder');
         if (pathfinder && pathfinder.enabled) {
           pathfinder.goToPlayer(sender);
           return `Coming to ${sender}!`;
@@ -87,7 +87,7 @@ class CommandHandler {
           return `Cannot find ${target}`;
         }
         
-        const pathfinder = this.engine.addons.get('pathfinding');
+        const pathfinder = this.engine.addons.get('super-pathfinder');
         if (pathfinder && pathfinder.enabled) {
           pathfinder.followPlayer(target);
           return `Following ${target}!`;
@@ -100,7 +100,7 @@ class CommandHandler {
       description: 'Stop current action',
       usage: '!stop',
       execute: () => {
-        const pathfinder = this.engine.addons.get('pathfinding');
+        const pathfinder = this.engine.addons.get('super-pathfinder');
         if (pathfinder && pathfinder.enabled) {
           pathfinder.stop();
         }
@@ -233,7 +233,7 @@ class CommandHandler {
       description: 'Go home',
       usage: '!home',
       execute: () => {
-        const pathfinder = this.engine.addons.get('pathfinding');
+        const pathfinder = this.engine.addons.get('super-pathfinder');
         if (pathfinder && pathfinder.enabled) {
           pathfinder.goHome();
           return 'Going home!';
@@ -314,10 +314,19 @@ class CommandHandler {
     });
     
     // NEW: A1-bot addon commands (moved from a1-bot.js chat listener)
+    const checkAdmin = (sender) => {
+      if (!this.engine.isAdmin(sender)) {
+        return 'Only admins can use this command';
+      }
+      return null;
+    };
+    
     this.registerCommand('stay', {
       description: 'Set mode to idle',
       usage: '!stay',
-      execute: () => {
+      execute: (args, sender) => {
+        const adminCheck = checkAdmin(sender);
+        if (adminCheck) return adminCheck;
         const a1Bot = this.engine.addons.get('a1-bot');
         if (a1Bot && a1Bot.setMode) {
           a1Bot.setMode('idle');
@@ -330,7 +339,9 @@ class CommandHandler {
     this.registerCommand('pvp', {
       description: 'Toggle PvP combat mode',
       usage: '!pvp',
-      execute: () => {
+      execute: (args, sender) => {
+        const adminCheck = checkAdmin(sender);
+        if (adminCheck) return adminCheck;
         const a1Bot = this.engine.addons.get('a1-bot');
         if (a1Bot) {
           if (a1Bot.enabled) {
@@ -348,7 +359,9 @@ class CommandHandler {
     this.registerCommand('kill', {
       description: 'Set combat mode',
       usage: '!kill',
-      execute: () => {
+      execute: (args, sender) => {
+        const adminCheck = checkAdmin(sender);
+        if (adminCheck) return adminCheck;
         const a1Bot = this.engine.addons.get('a1-bot');
         if (a1Bot && a1Bot.setMode) {
           a1Bot.setMode('combat');
@@ -361,7 +374,9 @@ class CommandHandler {
     this.registerCommand('crystal', {
       description: 'Set crystal mode',
       usage: '!crystal',
-      execute: () => {
+      execute: (args, sender) => {
+        const adminCheck = checkAdmin(sender);
+        if (adminCheck) return adminCheck;
         const a1Bot = this.engine.addons.get('a1-bot');
         if (a1Bot && a1Bot.setMode) {
           a1Bot.setMode('crystal');
@@ -374,7 +389,9 @@ class CommandHandler {
     this.registerCommand('pvm', {
       description: 'Set player vs mob mode',
       usage: '!pvm',
-      execute: () => {
+      execute: (args, sender) => {
+        const adminCheck = checkAdmin(sender);
+        if (adminCheck) return adminCheck;
         const a1Bot = this.engine.addons.get('a1-bot');
         if (a1Bot && a1Bot.setMode) {
           a1Bot.setMode('pvm');
@@ -387,7 +404,9 @@ class CommandHandler {
     this.registerCommand('pve', {
       description: 'Set player vs entity mode',
       usage: '!pve',
-      execute: () => {
+      execute: (args, sender) => {
+        const adminCheck = checkAdmin(sender);
+        if (adminCheck) return adminCheck;
         const a1Bot = this.engine.addons.get('a1-bot');
         if (a1Bot && a1Bot.setMode) {
           a1Bot.setMode('pve');
@@ -400,7 +419,9 @@ class CommandHandler {
     this.registerCommand('attack', {
       description: 'Toggle auto attack',
       usage: '!attack',
-      execute: () => {
+      execute: (args, sender) => {
+        const adminCheck = checkAdmin(sender);
+        if (adminCheck) return adminCheck;
         const a1Bot = this.engine.addons.get('a1-bot');
         if (a1Bot) {
           a1Bot.autoAttack = !a1Bot.autoAttack;
@@ -425,7 +446,9 @@ class CommandHandler {
     this.registerCommand('ff', {
       description: 'Toggle friendly fire',
       usage: '!ff',
-      execute: () => {
+      execute: (args, sender) => {
+        const adminCheck = checkAdmin(sender);
+        if (adminCheck) return adminCheck;
         const a1Bot = this.engine.addons.get('a1-bot');
         if (a1Bot) {
           a1Bot.friendlyFire = !a1Bot.friendlyFire;
@@ -439,6 +462,8 @@ class CommandHandler {
       description: 'Toggle guard mode',
       usage: '!guard [player]',
       execute: (args, sender) => {
+        const adminCheck = checkAdmin(sender);
+        if (adminCheck) return adminCheck;
         const a1Bot = this.engine.addons.get('a1-bot');
         if (a1Bot) {
           const target = args[0] || sender;
@@ -459,12 +484,13 @@ class CommandHandler {
     this.registerCommand('squad', {
       description: 'Spawn 5-bot squad',
       usage: '!squad',
-      execute: () => {
+      execute: (args, sender) => {
+        const adminCheck = checkAdmin(sender);
+        if (adminCheck) return adminCheck;
         const a1Bot = this.engine.addons.get('a1-bot');
         if (!a1Bot) {
           return 'A1-bot not available - use !give instead';
         }
-        
         try {
           a1Bot._spawnSquad();
           return 'Spawning 5-bot squad...';
@@ -478,15 +504,15 @@ class CommandHandler {
     this.registerCommand('army', {
       description: 'Spawn army bots',
       usage: '!army [count]',
-      execute: (args) => {
+      execute: (args, sender) => {
+        const adminCheck = checkAdmin(sender);
+        if (adminCheck) return adminCheck;
         const count = args.length > 0 ? parseInt(args[0]) || 9 : 9;
         const actualCount = Math.min(count, 96);
-        
         const a1Bot = this.engine.addons.get('a1-bot');
         if (!a1Bot) {
           return 'A1-bot not available - use !give instead';
         }
-        
         try {
           a1Bot._spawnArmy(actualCount);
           return 'Spawning ' + actualCount + '-bot army...';
