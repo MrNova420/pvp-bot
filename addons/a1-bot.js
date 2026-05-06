@@ -1849,6 +1849,106 @@ _setupEventListeners() {
     }
   }
   
+  // ==================== SPAWN METHODS ====================
+  
+  _generateGamingName(index) {
+    const prefixes = ['Pro', 'X', 'Shadow', 'Night', 'Silent', 'Dark', 'Death', 'Blood', 'Ghost', 'Phantom'];
+    const mids = ['Rager', 'Slayer', 'Killer', 'Strike', 'Strike', 'Fury', 'Viper', 'Ninja', 'Wolf', 'Blade'];
+    const suffixes = ['99', 'X', 'Mode', 'Lord', 'King', 'Prime', 'Ultra', 'Max', 'EX', 'OP'];
+    
+    const prefix = prefixes[index % prefixes.length];
+    const mid = mids[Math.floor(index / prefixes.length) % mids.length];
+    const suffix = suffixes[Math.floor(index / 100) % suffixes.length];
+    
+    return `${prefix}${mid}${suffix}${index}`;
+  }
+  
+  _spawnSquad() {
+    const count = 4;
+    const ownerName = this.bot.username;
+    
+    this.logger.info('[A1] Spawning squad - ' + count + ' bots');
+    this.bot.chat('Squad spawning! ' + count + ' bots joining!');
+    
+    const { spawn } = require('child_process');
+    
+    for (let i = 0; i < count; i++) {
+      const botName = this._generateGamingName(i + 1);
+      
+      setTimeout(() => {
+        try {
+          const proc = spawn('node', ['src/engine.js'], {
+            cwd: '/home/mrnova420/pvp-bot',
+            detached: true,
+            stdio: 'ignore',
+            env: { 
+              ...process.env, 
+              BOT_NAME: botName,
+              SQUAD_MODE: 'true',
+              USE_PROXY: 'true',
+              SQUAD_OWNER: ownerName,
+              FRIENDLY_FIRE: this.friendlyFire.toString()
+            }
+          });
+          
+          proc.unref();
+          this.engine.trackChildProcess(proc);
+          this.friendlyBots.add(botName);
+          
+          this.logger.info('[A1] Squad bot spawned: ' + botName);
+          this.bot.chat(botName + ' has joined the squad!');
+        } catch (e) {
+          this.logger.error('[A1] Spawn failed: ' + e.message);
+        }
+      }, i * 5000);
+    }
+  }
+  
+  _spawnArmy(count = 9) {
+    const ownerName = this.bot.username;
+    const actualCount = Math.min(count, 96);
+    
+    this.logger.info('[A1] Spawning army - ' + actualCount + ' bots');
+    this.bot.chat('Army incoming! ' + actualCount + ' bots joining!');
+    
+    const { spawn } = require('child_process');
+    
+    for (let i = 0; i < actualCount; i++) {
+      const botName = this._generateGamingName(i + 10);
+      
+      setTimeout(() => {
+        try {
+          const proc = spawn('node', ['src/engine.js'], {
+            cwd: '/home/mrnova420/pvp-bot',
+            detached: true,
+            stdio: 'ignore',
+            env: { 
+              ...process.env, 
+              BOT_NAME: botName,
+              ARMY_MODE: 'true',
+              USE_PROXY: 'true',
+              ARMY_OWNER: ownerName,
+              FRIENDLY_FIRE: this.friendlyFire.toString()
+            }
+          });
+          
+          proc.unref();
+          this.engine.trackChildProcess(proc);
+          this.friendlyBots.add(botName);
+          
+          this.logger.info('[A1] Army bot spawned: ' + botName);
+          
+          const spawned = i + 1;
+          if (spawned % 10 === 0 || spawned === actualCount) {
+            this.bot.chat(spawned + '/' + actualCount + ' army bots deployed!');
+          }
+        } catch (e) {
+          this.logger.error('[A1] Army spawn failed: ' + e.message);
+        }
+      }, i * 3000);
+    }
+  }
+
   stop() {
     this.following = false;
     this.followTarget = null;

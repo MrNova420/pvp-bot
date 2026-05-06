@@ -156,7 +156,8 @@ async function showMainMenu() {
   console.log('7. 📦  Install/Update');
   console.log('8. 📋  View Logs (Debug/Warning/Error)');
   console.log('9. ❓  Help');
-  console.log('10. ❌  Exit');
+  console.log('10. 🤖 Multi-Bot (5/10/50/100)');
+  console.log('11. ❌  Exit');
   console.log('');
   
   const choice = await question('Select: ');
@@ -171,7 +172,8 @@ async function showMainMenu() {
     case '7': await installDeps(); break;
     case '8': showFullLogs(); await showMainMenu(); return;
     case '9': await showHelp(); break;
-    case '10': 
+    case '10': await spawnMultiBots(); break;
+    case '11': 
       console.log('\n👋 Goodbye!');
       process.exit(0);
     default:
@@ -393,7 +395,7 @@ async function showHelp() {
   console.log('');
   console.log('╔═══════════════════════════════════════╗');
   console.log('║            HELP & GUIDES               ║');
-  console.log('╚══════════════════════════════════���═��══╝');
+  console.log('╚═══════════════════════════════════════╝');
   console.log('');
   console.log('📖 Quick Start:');
   console.log('  1. Run: node setup.js');
@@ -419,6 +421,84 @@ async function showHelp() {
   console.log('  - configs/: Combat presets');
   console.log('  - src/combat/: Combat systems');
   console.log('');
+}
+
+function generateBotName(index) {
+  const prefixes = ['Pro', 'X', 'Shadow', 'Night', 'Silent', 'Dark', 'Death', 'Blood', 'Ghost', 'Phantom'];
+  const mids = ['Rager', 'Slayer', 'Killer', 'Strike', 'Fury', 'Viper', 'Ninja', 'Wolf', 'Blade', 'Prime'];
+  const suffixes = ['99', 'X', 'Mode', 'Lord', 'King', 'Ultra', 'Max', 'EX', 'OP', 'GG'];
+  
+  const prefix = prefixes[index % prefixes.length];
+  const mid = mids[Math.floor(index / 10) % mids.length];
+  const suffix = suffixes[Math.floor(index / 100) % suffixes.length];
+  
+  return prefix + mid + suffix + index;
+}
+
+async function spawnMultiBots() {
+  console.log('\n╔═══════════════════════════════════════╗');
+  console.log('║          MULTI-BOT SPAWNER          ║');
+  console.log('╚═══════════════════════════════════╝');
+  console.log('');
+  console.log('How many bots to spawn?');
+  console.log('  1. 5 bots (Squad)');
+  console.log('  2. 10 bots (Small Army)');
+  console.log('  3. 50 bots (Large Army)');
+  console.log('  4. 100 bots (Maximum)');
+  console.log('  5. Custom amount');
+  console.log('');
+  
+  const choice = await question('Select: ');
+  
+  let count = 5;
+  switch (choice) {
+    case '1': count = 5; break;
+    case '2': count = 10; break;
+    case '3': count = 50; break;
+    case '4': count = 100; break;
+    case '5':
+      const custom = await question('Enter number (1-100): ');
+      count = Math.min(parseInt(custom) || 5, 100);
+      break;
+    default:
+      console.log('Invalid choice, defaulting to 5');
+      count = 5;
+  }
+  
+  const useProxy = await question('\nUse proxy? (y/N): ') || 'n';
+  const useProxyBool = useProxy.toLowerCase() === 'y' || useProxy.toLowerCase() === 'yes';
+  
+  console.log('\n🤖 Spawning ' + count + ' bots...');
+  console.log('Proxy: ' + (useProxyBool ? 'Yes' : 'No'));
+  
+  const { spawn } = require('child_process');
+  
+  for (let i = 0; i < count; i++) {
+    const botName = generateBotName(i);
+    
+    setTimeout(() => {
+      const env = { 
+        ...process.env, 
+        BOT_NAME: botName,
+        USE_PROXY: useProxyBool ? 'true' : 'false',
+        MULTI_MODE: 'true'
+      };
+      
+      const proc = spawn('node', ['src/engine.js'], {
+        cwd: __dirname,
+        detached: true,
+        stdio: 'ignore',
+        env: env
+      });
+      
+      proc.unref();
+      savePID(proc.pid);
+      console.log('🤖 Bot ' + (i + 1) + '/' + count + ': ' + botName);
+    }, i * 3000);
+  }
+  
+  console.log('\n✅ Spawned ' + count + ' bots!');
+  console.log('Note: Bots will join over the next ' + (count * 3) + ' seconds');
 }
 
 if (require.main === module) {

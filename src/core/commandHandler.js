@@ -279,39 +279,16 @@ class CommandHandler {
         
         const amount = parseInt(args[0]) || 1;
         const player = args[1];
+        const actualAmount = Math.min(amount, 100);
         
-        // Spawn bots for player
-        const { spawn } = require('child_process');
-        for (let i = 0; i < amount; i++) {
-          setTimeout(() => {
-            const botName = this.engine.generateBotName();
-            this.engine.logger.info(`[Give] Spawning bot ${botName} for ${player}`);
-            
-            const proc = spawn('node', ['src/engine.js'], {
-              cwd: '/home/mrnova420/pvp-bot',
-              detached: true,
-              stdio: 'ignore',
-              env: { 
-                ...process.env, 
-                BOT_NAME: botName, 
-                GIVE_MODE: 'true',
-                GIVE_TARGET: player,
-                USE_PROXY: 'true',
-                FRIENDLY_FIRE: 'true' 
-              }
-            });
-            
-            proc.on('error', (err) => {
-              this.engine.logger.error(`[Give] Failed to spawn bot ${botName}: ${err.message}`);
-            });
-            
-            proc.unref();
-            this.engine.trackChildProcess(proc);
-            this.engine.addFriendlyBot(botName);
-          }, i * 5000); // 5s delay between spawns
-        }
+        // Use the new spawnBots method
+        this.engine.spawnBots(actualAmount, player, {
+          useProxy: true,
+          friendlyFire: true,
+          delay: 5000
+        });
         
-        return `Spawning ${amount} bots for ${player}! They will follow and protect you.`;
+        return `Spawning ${actualAmount} bots for ${player}! They will follow and protect you.`;
       }
     });
     
@@ -484,26 +461,39 @@ class CommandHandler {
       usage: '!squad',
       execute: () => {
         const a1Bot = this.engine.addons.get('a1-bot');
-        if (a1Bot) {
-          a1Bot.bot.chat('Squad mode: Spawning 5-bot squad!');
-          a1Bot._spawnSquad ? a1Bot._spawnSquad() : a1Bot._spawnArmy(4);
-          return 'Spawning squad...';
+        if (!a1Bot) {
+          return 'A1-bot not available - use !give instead';
         }
-        return 'A1-bot not available';
+        
+        try {
+          a1Bot._spawnSquad();
+          return 'Spawning 5-bot squad...';
+        } catch (e) {
+          this.logger.error('[Command] Squad error: ' + e.message);
+          return 'Spawn failed: ' + e.message;
+        }
       }
     });
     
     this.registerCommand('army', {
-      description: 'Spawn 10-bot army',
-      usage: '!army',
-      execute: () => {
+      description: 'Spawn army bots',
+      usage: '!army [count]',
+      execute: (args) => {
+        const count = args.length > 0 ? parseInt(args[0]) || 9 : 9;
+        const actualCount = Math.min(count, 96);
+        
         const a1Bot = this.engine.addons.get('a1-bot');
-        if (a1Bot) {
-          a1Bot.bot.chat('Army mode: Spawning 10-bot army!');
-          a1Bot._spawnArmy ? a1Bot._spawnArmy() : a1Bot._spawnArmy(9);
-          return 'Spawning army...';
+        if (!a1Bot) {
+          return 'A1-bot not available - use !give instead';
         }
-        return 'A1-bot not available';
+        
+        try {
+          a1Bot._spawnArmy(actualCount);
+          return 'Spawning ' + actualCount + '-bot army...';
+        } catch (e) {
+          this.logger.error('[Command] Army error: ' + e.message);
+          return 'Spawn failed: ' + e.message;
+        }
       }
     });
   }

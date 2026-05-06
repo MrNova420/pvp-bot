@@ -215,6 +215,57 @@ class BotEngine {
     return name;
   }
   
+  spawnBots(count = 1, targetPlayer = null, options = {}) {
+    // Spawn multiple bots via child processes
+    const { spawn } = require('child_process');
+    const useProxy = options.useProxy !== false;
+    const friendlyFire = options.friendlyFire !== false;
+    const delay = options.delay || 3000;
+    const actualCount = Math.min(count, 100);
+    
+    this.logger.info(`[Engine] Spawning ${actualCount} bots...`);
+    
+    const parentName = this.config.owner?.username || 'unknown';
+    
+    for (let i = 0; i < actualCount; i++) {
+      const botName = this.generateBotName();
+      
+      setTimeout(() => {
+        const env = { 
+          ...process.env, 
+          BOT_NAME: botName,
+          USE_PROXY: useProxy ? 'true' : 'false',
+          SPAWN_MODE: 'true',
+          SPAWN_PARENT: parentName,
+          FRIENDLY_FIRE: friendlyFire.toString()
+        };
+        
+        if (targetPlayer) {
+          env.SPAWN_TARGET = targetPlayer;
+        }
+        
+        try {
+          const proc = spawn('node', ['src/engine.js'], {
+            cwd: '/home/mrnova420/pvp-bot',
+            detached: true,
+            stdio: 'ignore',
+            env: env
+          });
+          
+          proc.unref();
+          this.trackChildProcess(proc);
+          this.addFriendlyBot(botName);
+          
+          this.logger.info(`[Engine] Spawned bot: ${botName}`);
+        } catch (e) {
+          this.logger.error(`[Engine] Spawn error: ${e.message}`);
+        }
+      }, i * delay);
+    }
+    
+    return `Spawning ${actualCount} bots...`;
+  }
+  
   _setupSafetyCallbacks() {
     this.safety.on('throttle', (metrics) => {
       this.logger.warn('Safety throttle activated', metrics);
