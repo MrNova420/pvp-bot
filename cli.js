@@ -181,7 +181,7 @@ async function showMainMenu() {
   }
   
   if (choice !== '9') {
-await spawnMultiBots(5);
+    await showMainMenu();
   }
 }
 

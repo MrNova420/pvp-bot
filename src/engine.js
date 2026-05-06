@@ -378,10 +378,11 @@ class BotEngine {
         
         // Proxy support - NO FALLBACK - keep trying until proxy works!
         if (process.env.USE_PROXY === 'true') {
-            // Use random bot name from pool for fresh identity
-            const randomName = this.getUniqueBotName();
-            this.logger.info(`[ProxyManager] Using fresh bot name: ${randomName}`);
-            botOptions.username = randomName;
+            // Use BOT_NAME from env if available, otherwise generate one
+            if (!process.env.BOT_NAME) {
+                botOptions.username = this.getUniqueBotName();
+            }
+            // else: keep the BOT_NAME already set above
             
             await this._connectWithProxy(botOptions);
             return;

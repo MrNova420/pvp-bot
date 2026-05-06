@@ -4,7 +4,7 @@ const { URL } = require('url');
 
 class ProxySources {
   constructor() {
-    // ONLY SOCKS proxies - socks-proxy-agent doesn't support HTTP!
+    // ONLY SOCKS proxies - socks-proxy-agent only supports SOCKS4/SOCKS5!
     this.sources = [
       {
         name: 'ProxyScrape SOCKS5',
@@ -32,44 +32,14 @@ class ProxySources {
         type: 'socks5'
       },
       {
-        name: 'clarketm HTTP',
-        url: 'https://raw.githubusercontent.com/clarketm/proxy-list/master/proxies-http.txt',
-        type: 'http'
-      },
-      {
         name: 'madveyjake SOCKS5',
         url: 'https://raw.githubusercontent.com/madveyjake/proxy-list/master/socks5.txt',
         type: 'socks5'
       },
       {
-        name: '-proxy-rayg- HTTP',
-        url: 'https://raw.githubusercontent.com/proxy-rayg/proxy_list/main/http.txt',
-        type: 'http'
-      },
-      {
-        name: 'roosterkid HTTP',
-        url: 'https://raw.githubusercontent.com/roosterkid/proxy-list/main/http.txt',
-        type: 'http'
-      },
-      {
         name: 'sunny9573 SOCKS5',
         url: 'https://raw.githubusercontent.com/sunny9573/proxy-list/master/socks5.txt',
         type: 'socks5'
-      },
-      {
-        name: 'mastercard HTTP',
-        url: 'https://raw.githubusercontent.com/a2elu/proxy-list/main/http.txt',
-        type: 'http'
-      },
-      {
-        name: 'US Only HTTP',
-        url: 'https://raw.githubusercontent.com/BlackBeaTE/Proxys/main/US.txt',
-        type: 'http'
-      },
-      {
-        name: 'EU Only HTTP',
-        url: 'https://raw.githubusercontent.com/BlackBeaTE/Proxys/main/EU.txt',
-        type: 'http'
       }
     ];
   }
@@ -135,11 +105,10 @@ class ProxySources {
     
     if (!host || isNaN(port)) return null;
     
+    // Only allow SOCKS4 and SOCKS5
     let type = defaultType;
-    if (line.includes('socks4') || line.includes('@')) {
-      type = 'socks4';
-    } else if (line.includes('socks5') || line.includes('@')) {
-      type = 'socks5';
+    if (type !== 'socks4' && type !== 'socks5') {
+      type = 'socks5'; // Default to socks5
     }
     
     return {

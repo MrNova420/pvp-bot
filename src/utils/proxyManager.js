@@ -7,7 +7,7 @@ class ProxyManager {
   constructor(config = {}, logger = null) {
     this.logger = logger || console;
     this.config = config;
-    this.enabled = config.enabled || false;
+    this.enabled = true; // Always enabled - used via USE_PROXY env var
     this.proxies = new Map();
     this.blacklist = new Set();
     this.healthScores = new Map();
