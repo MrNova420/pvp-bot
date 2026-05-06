@@ -76,7 +76,7 @@ async function main() {
       USE_PROXY: 'true' // Enable proxy for multi-bot to avoid throttling
     };
     
-    const bot = spawn('node', ['index.js'], {
+    const bot = spawn('node', ['src/engine.js'], {
       stdio: 'inherit',
       cwd: __dirname,
       detached: false,

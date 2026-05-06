@@ -13,20 +13,28 @@ class SuperPathfinderAddon {
     this.following = false;
     this.followTarget = null;
     this.lastJumpTime = 0;
+    
+    // From advanced-pathfinder.js and pathfinding.js
+    this.followDistance = 3;
   }
-
+  
   init(bot, engine) {
     this.bot = bot;
     this.engine = engine;
     this.logger = engine.getLogger();
-
+    
     try {
       const { pathfinder, Movements, goals } = require('mineflayer-pathfinder');
-      this.bot.loadPlugin(pathfinder);
       this.goals = goals;
+      
+      // Load plugin if not already loaded
+      if (!this.bot.pathfinder) {
+        this.bot.loadPlugin(pathfinder);
+      }
       
       const mcData = require('minecraft-data')(this.bot.version);
       
+      // Use the most comprehensive movement config (from super-pathfinder.js)
       this.movements = new Movements(this.bot, mcData, {
         canOpenDoors: true,
         canBreakDoors: true,
@@ -36,15 +44,21 @@ class SuperPathfinderAddon {
         placeholderMaxDropAndBreak: 100
       });
       
-      this.bot.pathfinder.setMovements(this.movements);
+      if (this.bot.pathfinder) {
+        this.bot.pathfinder.setMovements(this.movements);
+      }
       
+      // Setup tick-based movement (from super-pathfinder.js)
       this.bot.on('physicsTick', () => this.tick());
       
+      this.logger.info('[SuperPathfinder] Initialized with custom movements and tick-based movement');
     } catch (err) {
-      this.logger.error('[Super Pathfinder] Init failed:', err.message);
+      this.logger.error('[SuperPathfinder] Init failed:', err.message);
     }
   }
-
+  
+  // ==================== TICK-BASED MOVEMENT (from super-pathfinder.js) ====================
+  
   tick() {
     if (!this.bot.entity || !this.following || !this.followTarget) return;
     
@@ -54,7 +68,7 @@ class SuperPathfinderAddon {
     const dist = this.bot.entity.position.distanceTo(player.entity.position);
     const now = Date.now();
     
-    // Different tiers based on distance
+    // Different tiers based on distance (from super-pathfinder.js)
     
     // Far - Pro jump-sprint
     if (dist > 4) {
@@ -83,7 +97,9 @@ class SuperPathfinderAddon {
       this.bot.setControlState('jump', false);
     }
   }
-
+  
+  // ==================== FOLLOW PLAYER (merged from all files) ====================
+  
   async followPlayer(playerName, distance = 3) {
     if (!this.bot || !this.bot.pathfinder) return false;
     
@@ -92,26 +108,47 @@ class SuperPathfinderAddon {
     
     this.following = true;
     this.followTarget = playerName;
+    this.followDistance = distance;
     this.lastJumpTime = 0;
     
-    const goal = new this.goals.GoalFollow(player.entity, distance);
-    this.bot.pathfinder.setGoal(goal, true);
-    
-    this.logger.info('[Super Pathfinder] Following ' + playerName);
-    return true;
-  }
-
-  async goto(x, y, z) {
-    if (!this.bot.pathfinder) return false;
     try {
-      const goal = new this.goals.GoalBlock(x, y, z);
-      await this.bot.pathfinder.goto(goal);
+      // Use GoalFollow from goals (merged from all files)
+      if (this.goals) {
+        const goal = new this.goals.GoalFollow(player.entity, distance);
+        this.bot.pathfinder.setGoal(goal, true);
+      }
+      
+      this.logger.info('[SuperPathfinder] Following ' + playerName + ' at distance ' + distance);
       return true;
     } catch (err) {
+      this.logger.error('[SuperPathfinder] Follow error:', err.message);
       return false;
     }
   }
-
+  
+  // Alias for compatibility (from pathfinding.js uses goTo, advanced-pathfinder uses goto)
+  async goTo(x, y, z) {
+    return this.goto(x, y, z);
+  }
+  
+  async goto(x, y, z) {
+    if (!this.bot.pathfinder) return false;
+    
+    try {
+      if (this.goals) {
+        const goal = new this.goals.GoalBlock(x, y, z);
+        await this.bot.pathfinder.goto(goal);
+        this.logger.info(`[SuperPathfinder] Reached destination: (${x}, ${y}, ${z})`);
+      }
+      return true;
+    } catch (err) {
+      this.logger.error(`[SuperPathfinder] Error:`, err.message);
+      return false;
+    }
+  }
+  
+  // ==================== STOP (merged from all files) ====================
+  
   stop() {
     this.following = false;
     this.followTarget = null;
@@ -121,17 +158,25 @@ class SuperPathfinderAddon {
       this.bot.pathfinder.setGoal(null);
     }
     this.bot?.clearControlStates();
+    
+    this.logger.info('[SuperPathfinder] Stopped');
   }
-
+  
+  // ==================== ENABLE/DISABLE ====================
+  
   enable() {
     this.enabled = true;
+    this.logger.info('[SuperPathfinder] Enabled');
   }
-
+  
   disable() {
     this.enabled = false;
     this.stop();
+    this.logger.info('[SuperPathfinder] Disabled');
   }
-
+  
+  // ==================== CLEANUP ====================
+  
   cleanup() {
     this.disable();
     this.bot = null;

@@ -30,6 +30,8 @@ class BotEngine {
     this.botNameRegistry = new Set();
     this.admins = new Set(); // Track admin users
     this.usingProxy = process.env.USE_PROXY === 'true';
+    this.proxyRetryCount = 0;
+    this.proxyMaxRetries = 10;
     this.proxyCheckInterval = null;
     this.lastVerifiedIP = null;
     this.currentProxy = null;
@@ -252,11 +254,11 @@ class BotEngine {
     this.logger.info(`[IPC] Received: ${msg.type}`);
     
     if (msg.type === 'friendlyFire') {
-      // Update friendly fire setting
-      if (this.addons.has('pvp')) {
-        const pvp = this.addons.get('pvp');
-        pvp.friendlyFire = msg.value === true;
-        this.logger.info(`[IPC] Friendly fire set to: ${pv.friendlyFire}`);
+      // Update friendly fire setting (check both a1-bot and legacy pvp addon)
+      const combatAddon = this.addons.get('a1-bot') || this.addons.get('pvp');
+      if (combatAddon) {
+        combatAddon.friendlyFire = msg.value === true;
+        this.logger.info(`[IPC] Friendly fire set to: ${combatAddon.friendlyFire}`);
       }
     }
   }
@@ -297,8 +299,17 @@ class BotEngine {
         
         // Override username if BOT_NAME env var is set (for multi-bot spawning)
         if (process.env.BOT_NAME) {
-          authOptions.username = process.env.BOT_NAME;
-          this.logger.info(`[Engine] Using bot name from env: ${authOptions.username}`);
+            let botName = process.env.BOT_NAME;
+            
+            // Validate bot name
+            const validNameRegex = /^[a-zA-Z0-9_]{3,16}$/;
+            if (!validNameRegex.test(botName)) {
+                this.logger.warn(`[Engine] Invalid BOT_NAME "${botName}" - must be 3-16 alphanumeric chars. Using random name instead.`);
+                botName = this.botNamePool[Math.floor(Math.random() * this.botNamePool.length)] + Math.floor(Math.random() * 9000);
+            }
+            
+            authOptions.username = botName;
+            this.logger.info(`[Engine] Using bot name from env: ${authOptions.username}`);
         }
         
         let botOptions = {
@@ -495,9 +506,17 @@ class BotEngine {
             }
         }
         
-        // All attempts exhausted - retry with fresh proxies
-        this.logger.error('[ProxyManager] All proxies tried, refetching...');
-        setTimeout(() => this._connectWithProxy(botOptions), 3000);
+        // All attempts exhausted - retry with fresh proxies (with limit)
+        this.proxyRetryCount++;
+        if (this.proxyRetryCount > this.proxyMaxRetries) {
+            this.logger.error('[ProxyManager] Max retries exceeded, giving up');
+            this._onFatalError(new Error('Proxy connection failed after max retries'));
+            return;
+        }
+        
+        const backoffMs = Math.min(3000 * Math.pow(2, this.proxyRetryCount), 30000);
+        this.logger.error(`[ProxyManager] All proxies tried (retry ${this.proxyRetryCount}/${this.proxyMaxRetries}), refetching in ${backoffMs}ms...`);
+        setTimeout(() => this._connectWithProxy(botOptions), backoffMs);
     }
     
     async _tryProxy(proxy, botOptions, attemptNum) {
@@ -673,7 +692,8 @@ class BotEngine {
         this.logger.info(`Addon initialized: ${name}`);
         
         // Auto-enable addon if it matches current mode
-        if (name === this.currentMode && addon.enable) {
+        // Special case: a1-bot addon should auto-enable when mode is "pvp"
+        if ((name === this.currentMode || (this.currentMode === 'pvp' && name === 'a1-bot')) && addon.enable) {
           setTimeout(() => {
             addon.enable();
             this.logger.info(`Auto-enabled ${name} mode addon`);

@@ -335,6 +335,177 @@ class CommandHandler {
         return `${newAdmin} is now an admin!`;
       }
     });
+    
+    // NEW: A1-bot addon commands (moved from a1-bot.js chat listener)
+    this.registerCommand('stay', {
+      description: 'Set mode to idle',
+      usage: '!stay',
+      execute: () => {
+        const a1Bot = this.engine.addons.get('a1-bot');
+        if (a1Bot && a1Bot.setMode) {
+          a1Bot.setMode('idle');
+          return 'Idle mode';
+        }
+        return 'A1-bot not available';
+      }
+    });
+    
+    this.registerCommand('pvp', {
+      description: 'Toggle PvP combat mode',
+      usage: '!pvp',
+      execute: () => {
+        const a1Bot = this.engine.addons.get('a1-bot');
+        if (a1Bot) {
+          if (a1Bot.enabled) {
+            a1Bot.disable();
+            return 'PvP disabled';
+          } else {
+            a1Bot.enable();
+            return 'PvP enabled! Ready to fight!';
+          }
+        }
+        return 'A1-bot not available';
+      }
+    });
+    
+    this.registerCommand('kill', {
+      description: 'Set combat mode',
+      usage: '!kill',
+      execute: () => {
+        const a1Bot = this.engine.addons.get('a1-bot');
+        if (a1Bot && a1Bot.setMode) {
+          a1Bot.setMode('combat');
+          return 'Combat mode activated!';
+        }
+        return 'A1-bot not available';
+      }
+    });
+    
+    this.registerCommand('crystal', {
+      description: 'Set crystal mode',
+      usage: '!crystal',
+      execute: () => {
+        const a1Bot = this.engine.addons.get('a1-bot');
+        if (a1Bot && a1Bot.setMode) {
+          a1Bot.setMode('crystal');
+          return 'Crystal mode';
+        }
+        return 'A1-bot not available';
+      }
+    });
+    
+    this.registerCommand('pvm', {
+      description: 'Set player vs mob mode',
+      usage: '!pvm',
+      execute: () => {
+        const a1Bot = this.engine.addons.get('a1-bot');
+        if (a1Bot && a1Bot.setMode) {
+          a1Bot.setMode('pvm');
+          return 'PvM mode';
+        }
+        return 'A1-bot not available';
+      }
+    });
+    
+    this.registerCommand('pve', {
+      description: 'Set player vs entity mode',
+      usage: '!pve',
+      execute: () => {
+        const a1Bot = this.engine.addons.get('a1-bot');
+        if (a1Bot && a1Bot.setMode) {
+          a1Bot.setMode('pve');
+          return 'PvE mode';
+        }
+        return 'A1-bot not available';
+      }
+    });
+    
+    this.registerCommand('attack', {
+      description: 'Toggle auto attack',
+      usage: '!attack',
+      execute: () => {
+        const a1Bot = this.engine.addons.get('a1-bot');
+        if (a1Bot) {
+          a1Bot.autoAttack = !a1Bot.autoAttack;
+          return `Auto attack: ${a1Bot.autoAttack ? 'ON' : 'OFF'}`;
+        }
+        return 'A1-bot not available';
+      }
+    });
+    
+    this.registerCommand('test', {
+      description: 'Test command',
+      usage: '!test',
+      execute: () => {
+        const a1Bot = this.engine.addons.get('a1-bot');
+        if (a1Bot) {
+          return 'Chat commands are working! PvP mode: ' + (a1Bot.enabled ? 'ON' : 'OFF');
+        }
+        return 'A1-bot not available';
+      }
+    });
+    
+    this.registerCommand('ff', {
+      description: 'Toggle friendly fire',
+      usage: '!ff',
+      execute: () => {
+        const a1Bot = this.engine.addons.get('a1-bot');
+        if (a1Bot) {
+          a1Bot.friendlyFire = !a1Bot.friendlyFire;
+          return `Friendly fire: ${a1Bot.friendlyFire ? 'ON' : 'OFF'}`;
+        }
+        return 'A1-bot not available';
+      }
+    });
+    
+    this.registerCommand('guard', {
+      description: 'Toggle guard mode',
+      usage: '!guard [player]',
+      execute: (args, sender) => {
+        const a1Bot = this.engine.addons.get('a1-bot');
+        if (a1Bot) {
+          const target = args[0] || sender;
+          if (a1Bot.isProtecting) {
+            a1Bot._stopProtect();
+            return 'Stopped guarding';
+          } else {
+            const success = a1Bot._startProtect(target);
+            if (success) {
+              return `Guarding ${target} - will follow and attack threats!`;
+            }
+          }
+        }
+        return 'A1-bot not available';
+      }
+    });
+    
+    this.registerCommand('squad', {
+      description: 'Spawn 5-bot squad',
+      usage: '!squad',
+      execute: () => {
+        const a1Bot = this.engine.addons.get('a1-bot');
+        if (a1Bot) {
+          a1Bot.bot.chat('Squad mode: Spawning 5-bot squad!');
+          a1Bot._spawnSquad ? a1Bot._spawnSquad() : a1Bot._spawnArmy(4);
+          return 'Spawning squad...';
+        }
+        return 'A1-bot not available';
+      }
+    });
+    
+    this.registerCommand('army', {
+      description: 'Spawn 10-bot army',
+      usage: '!army',
+      execute: () => {
+        const a1Bot = this.engine.addons.get('a1-bot');
+        if (a1Bot) {
+          a1Bot.bot.chat('Army mode: Spawning 10-bot army!');
+          a1Bot._spawnArmy ? a1Bot._spawnArmy() : a1Bot._spawnArmy(9);
+          return 'Spawning army...';
+        }
+        return 'A1-bot not available';
+      }
+    });
   }
   
   registerCommand(name, command) {

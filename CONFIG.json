@@ -65,13 +65,14 @@
   "addons": {
     "afk": false,
     "player": true,
-    "pathfinding": true,
     "building": true,
     "mining": true,
     "crafting": true,
     "trading": false,
-    "superPathfinder": false,
-    "pvp": true
+    "a1-bot": true,
+    "super-pathfinder": true,
+    "pvp": false,
+    "pathfinding": false
   },
   "owner": {
     "username": "Super_nova94332"
