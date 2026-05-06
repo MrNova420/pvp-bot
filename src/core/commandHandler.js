@@ -262,6 +262,79 @@ class CommandHandler {
         }
       }
     });
+    
+    // NEW: !give command - Give bots to player
+    this.registerCommand('give', {
+      description: 'Give bots to player (they will follow/protect)',
+      usage: '!give <amount> <player>',
+      execute: (args, sender) => {
+        if (args.length < 2) {
+          return 'Usage: !give <amount> <player>';
+        }
+        
+        // Check if sender is admin
+        if (!this.engine.isAdmin(sender) && sender !== this.engine.config.owner?.username) {
+          return 'Only admins can use !give';
+        }
+        
+        const amount = parseInt(args[0]) || 1;
+        const player = args[1];
+        
+        // Spawn bots for player
+        const { spawn } = require('child_process');
+        for (let i = 0; i < amount; i++) {
+          setTimeout(() => {
+            const botName = this.engine.generateBotName();
+            this.engine.logger.info(`[Give] Spawning bot ${botName} for ${player}`);
+            
+            const proc = spawn('node', ['src/engine.js'], {
+              cwd: '/home/mrnova420/pvp-bot',
+              detached: true,
+              stdio: 'ignore',
+              env: { 
+                ...process.env, 
+                BOT_NAME: botName, 
+                GIVE_MODE: 'true',
+                GIVE_TARGET: player,
+                USE_PROXY: 'true',
+                FRIENDLY_FIRE: 'true' 
+              }
+            });
+            
+            proc.on('error', (err) => {
+              this.engine.logger.error(`[Give] Failed to spawn bot ${botName}: ${err.message}`);
+            });
+            
+            proc.unref();
+            this.engine.trackChildProcess(proc);
+            this.engine.addFriendlyBot(botName);
+          }, i * 5000); // 5s delay between spawns
+        }
+        
+        return `Spawning ${amount} bots for ${player}! They will follow and protect you.`;
+      }
+    });
+    
+    // NEW: !admin command - Add admin user
+    this.registerCommand('admin', {
+      description: 'Add admin user',
+      usage: '!admin <player>',
+      execute: (args, sender) => {
+        if (args.length === 0) {
+          const admins = this.engine.getAdmins();
+          return `Admins: ${admins.join(', ') || 'None'}`;
+        }
+        
+        // Only owner can add admins
+        if (sender !== this.engine.config.owner?.username) {
+          return 'Only owner can add admins';
+        }
+        
+        const newAdmin = args[0];
+        this.engine.addAdmin(newAdmin);
+        return `${newAdmin} is now an admin!`;
+      }
+    });
   }
   
   registerCommand(name, command) {
@@ -287,7 +360,7 @@ class CommandHandler {
       const response = command.execute(args, sender);
       return response;
     } catch (err) {
-      this.logger.error(`Command error: ${err.message}`);
+      this.logger.error('Command error:', err.message);
       return `Error: ${err.message}`;
     }
   }

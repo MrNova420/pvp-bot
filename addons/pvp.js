@@ -48,22 +48,28 @@ class PvPAddon {
     // Pathfinder
     this.pathfinderLoaded = false;
     
-    // Combat stats
-    this.combatStats = {
-      hits: 0,
-      misses: 0,
-      damageDealt: 0,
-      damageTaken: 0,
-      kills: 0,
-      deaths: 0
+    // Combat improvements: reaction time, prediction, smarter AI
+    this.reactionTime = 50 + Math.floor(Math.random() * 150); // 50-200ms human-like
+    this.lastReactionCheck = 0;
+    this.attackCooldown = 0; // Track attack cooldown
+    this.skillCooldowns = {
+      strafe: 0,
+      block: 0,
+      omen: 0
     };
     
     // Last attack time for sprint reset
     this.lastAttackTime = 0;
     
-    // Tactics
-    this.currentTactic = 'aggressive'; // aggressive, defensive, hit-and-run
-    this.tacticSwitchThreshold = 10; // Health threshold to switch tactics
+// Tactical modes for different situations
+    this.tacticModes = {
+      aggressive: { sprint: true, strafe: 0.8, backoff: 0.2, description: 'All-out attack' },
+      defensive: { sprint: false, strafe: 0.5, backoff: 0.8, description: 'Play it safe' },
+      hitAndRun: { sprint: true, strafe: 0.3, backoff: 0.6, description: 'Quick hits then retreat' },
+      surround: { sprint: true, strafe: 1.0, backoff: 0.1, description: 'Circle target' },
+      flank: { sprint: true, strafe: 0.2, backoff: 0.3, description: 'Get behind target' }
+    };
+    this.currentTacticMode = 'agressive';
     
     // Realistic gaming name generator
     this._realisticNames = [
@@ -78,9 +84,12 @@ class PvPAddon {
     ];
   }
   
-  // Generate realistic gaming name
+  // Generate realistic gaming name - ensures uniqueness
   _generateGamingName(index) {
-    return this._realisticNames[index % this._realisticNames.length] + '_' + Math.floor(index / this._realisticNames.length + 1);
+    const baseName = this._realisticNames[index % this._realisticNames.length];
+    const suffix = Math.floor(index / this._realisticNames.length) + 1;
+    const randomSuffix = Math.floor(Math.random() * 9000) + 1000;
+    return `${baseName}_${suffix}${randomSuffix}`;
   }
 
   init(bot, engine) {
@@ -296,6 +305,12 @@ class PvPAddon {
     }
     this.lastPhysicsTick = now;
     
+    // Reaction time - human-like delay before attacking (50-200ms)
+    if (now - this.lastReactionCheck < this.reactionTime) {
+      return;
+    }
+    this.lastReactionCheck = now;
+    
     // ALWAYS use PvP engine as PRIMARY system
     // All modes use the same advanced/basic combat system
     if (this.useAdvanced && this.advancedPvp && this.bot.entity) {
@@ -384,35 +399,79 @@ class PvPAddon {
     }
   }
 
-  _updateTactics() {
+_updateTactics() {
     if (!this.bot.entity) return;
     
     const health = this.bot.health || 20;
     const food = this.bot.food || 20;
+    const enemies = this._findEnemies();
     
-    // Switch tactics based on health and food
-    if (health < this.tacticSwitchThreshold && this.currentTactic !== 'defensive') {
-      this.currentTactic = 'defensive';
-      // In defensive mode: less aggressive, more healing, keep distance
-      if (this.advancedPvp && this.advancedPvp.options) {
-        this.advancedPvp.options.cps = Math.max(4, this.cps - 2); // Slower attacks
+    // Determine best tactic mode based on situation
+    let newMode = this.currentTacticMode;
+    
+    if (health < 8 && enemies.length > 0) {
+      newMode = 'hitAndRun'; // Low health → hit and run
+    } else if (enemies.length > 2) {
+      newMode = 'surround'; // Outnumbered → surround tactics
+    } else if (health < this.tacticSwitchThreshold) {
+      newMode = 'defensive';
+    } else if (this.currentTarget && this.currentTarget.entity) {
+      const dist = this.bot.entity.position.distanceTo(this.currentTarget.entity.position);
+      if (dist > 5) {
+        newMode = 'flank'; // Target far away → flank
+      } else {
+        newMode = 'agressive';
       }
-      this.logger.info('[PvP] Switching to defensive tactics (health: ' + health + ')');
-    } else if (health >= this.tacticSwitchThreshold && this.currentTactic !== 'aggressive') {
-      this.currentTactic = 'aggressive';
-      // In aggressive mode: max CPS, full sprint, all techniques
+    } else {
+      newMode = 'agressive';
+    }
+    
+    // Apply new tactic mode
+    if (newMode !== this.currentTacticMode) {
+      const mode = this.tacticModes[newMode];
+      this.currentTacticMode = newMode;
+      
+      // Apply tactic settings
       if (this.advancedPvp && this.advancedPvp.options) {
-        this.advancedPvp.options.cps = this.cps; // Full CPS
+        this.advancedPvp.options.cps = newMode === 'defensive' ? Math.max(4, this.cps - 2) : this.cps;
       }
-      this.logger.info('[PvP] Switching to aggressive tactics (health: ' + health + ')');
+      
+      this.logger.info('[PvP] Switching to ' + mode.description + ' (health: ' + health + ')');
     }
     
     // Emergency heal check
     if (health < 6 && food > 5) {
       this._heal();
     }
+    
+    // Apply tactic-specific movement
+    const tactic = this.tacticModes[this.currentTacticMode];
+    if (tactic) {
+      // Sprint based on tactic
+      this.bot.setControlState('sprint', tactic.sprint);
+      
+      // Random strafe based on tactic
+      if (Math.random() < tactic.strafe) {
+        const strafe = Math.random() > 0.5 ? 'left' : 'right';
+        this.bot.setControlState(strafe, true);
+        setTimeout(() => {
+          if (this.bot) this.bot.setControlState(strafe, false);
+        }, 200 + Math.random() * 300);
+      }
+      
+      // Back off based on tactic
+      if (Math.random() < tactic.backoff && this.currentTarget?.entity) {
+        const dist = this.bot.entity.position.distanceTo(this.currentTarget.entity.position);
+        if (dist < 2) {
+          this.bot.setControlState('back', true);
+          setTimeout(() => {
+            if (this.bot) this.bot.setControlState('back', false);
+          }, 200 + Math.random() * 300);
+        }
+      }
+    }
   }
-
+  
   _advancedCombatLoop() {
     if (!this.enabled || !this.bot.entity) return;
     
@@ -492,35 +551,34 @@ class PvPAddon {
       }, 150);
     }
     
-    // PRO MOVEMENT: Bunny hopping (jump as soon as you land)
+// AFK-style movement: sprint-jump for fastest movement
+    // This replaces the old bunny hop which was inconsistent
     if (this.bot.entity.onGround && Math.random() < 0.5) {
+      this.bot.setControlState('sprint', true);
       this.bot.setControlState('jump', true);
-      this.logger.debug('[PvP] Skill: Bunny hop!');
-      setTimeout(() => this.bot.setControlState('jump', false), 80);
+      this.logger.debug('[PvP] Skill: Sprint-jump!');
+      setTimeout(() => {
+        if (this.bot) this.bot.setControlState('jump', false);
+      }, 250);
     }
     
     // Sprint reset after each hit for maximum knockback
     if (this.enableAntiKB && this.lastAttackTime && Date.now() - this.lastAttackTime < 200) {
       this.bot.setControlState('sprint', false);
       this.logger.debug('[PvP] Skill: Sprint reset for knockback');
-      setTimeout(() => this.bot.setControlState('sprint', true), 50);
+      setTimeout(() => {
+        if (this.bot) this.bot.setControlState('sprint', true);
+      }, 50);
     }
     
     // Random strafe changes for unpredictability
     if (Math.random() < 0.25) {
-      const strafe = Math.random() > 0.5 ? 'right' : 'left';
+      const strafe = Math.random() > 0.5 ? 'left' : 'right';
       this.bot.setControlState(strafe, true);
       this.logger.debug('[PvP] Skill: Random strafe ' + strafe);
-      setTimeout(() => this.bot.setControlState(strafe, false), 250 + Math.random() * 200);
-    }
-    
-    // Occasionally change direction abruptly (pro technique)
-    if (Math.random() < 0.1) {
-      const newLeft = !this.bot.getControlState('left');
-      const newRight = !this.bot.getControlState('right');
-      this.bot.setControlState('left', newLeft);
-      this.bot.setControlState('right', newRight);
-      this.logger.debug('[PvP] Skill: Direction switch - left:' + newLeft + ' right:' + newRight);
+      setTimeout(() => {
+        if (this.bot) this.bot.setControlState(strafe, false);
+      }, 250 + Math.random() * 200);
     }
     
     // W-tap after hits
@@ -528,17 +586,18 @@ class PvPAddon {
       this.bot.setControlState('forward', false);
       this.logger.debug('[PvP] Skill: W-tap (release forward)');
       setTimeout(() => {
-        this.bot.setControlState('forward', true);
-        this.logger.debug('[PvP] Skill: W-tap (forward again)');
+        if (this.bot) this.bot.setControlState('forward', true);
         // Double W-tap for extra knockback
         setTimeout(() => {
-          this.bot.setControlState('forward', false);
-          setTimeout(() => this.bot.setControlState('forward', true), 30);
+          if (this.bot) this.bot.setControlState('forward', false);
+          setTimeout(() => {
+            if (this.bot) this.bot.setControlState('forward', true);
+          }, 30);
         }, 50);
       }, 30);
     }
   }
-
+  
   _updateTarget(enemies) {
     const now = Date.now();
     
@@ -562,8 +621,43 @@ class PvPAddon {
       return;
     }
     
-    // We have enemies - find the best target
-    const bestTarget = this._selectBestTarget(enemies);
+    // PREDICTION: Use velocity to predict where target will be
+    let bestTarget = this._selectBestTarget(enemies);
+    
+    // If we have advanced PvP, use its prediction
+    if (this.useAdvanced && this.advancedPvp) {
+      try {
+        // Let advanced system handle prediction
+        return;
+      } catch(e) {}
+    }
+    
+    // Basic prediction: add velocity and acceleration to target position
+    if (bestTarget && bestTarget.entity) {
+      const entity = bestTarget.entity;
+      if (entity.velocity) {
+        // Calculate acceleration (change in velocity)
+        const now = Date.now();
+        if (!entity._lastVelocityUpdate || now - entity._lastVelocityUpdate > 100) {
+          entity._lastVelocity = entity.velocity;
+          entity._lastVelocityUpdate = now;
+        }
+        
+        // Predict position 2 ticks ahead with acceleration
+        const accelX = entity.velocity.x - (entity._lastVelocity?.x || 0);
+        const accelZ = entity.velocity.z - (entity._lastVelocity?.z || 0);
+        
+        bestTarget._predictedPos = entity.position.offset(
+          entity.velocity.x * 2 + accelX * 0.5,
+          0,
+          entity.velocity.z * 2 + accelZ * 0.5
+        );
+        
+        // Store velocity for next acceleration calculation
+        entity._lastVelocity = { x: entity.velocity.x, z: entity.velocity.z };
+        entity._lastVelocityUpdate = now;
+      }
+    }
     
     // Only switch targets if the new one is SIGNIFICANTLY better (prevent flickering)
     if (!this.currentTarget || 
@@ -673,12 +767,40 @@ class PvPAddon {
      }
    }
    
-   _getAggressionScore(player) {
-     // Check if player has recently attacked us or our allies
-     // This would require combat log tracking - simplified for now
-     // In a full implementation, we'd track recent hits received
-     return 0; // Placeholder - can be enhanced with combat logging
-   }
+_getAggressionScore(player) {
+    // Check if player has recently attacked us or our allies
+    if (!player || !player.entity) return 0;
+    
+    // Check combat stats - if they've hit us recently
+    const now = Date.now();
+    const recentHitThreshold = 10000; // 10 seconds
+    
+    // If this player is our current target, they're being aggressive
+    if (this.currentTarget && this.currentTarget.entity?.id === player.entity.id) {
+      return 50; // High score for current target being aggressive
+    }
+    
+    // Check if player is looking at us (about to attack)
+    try {
+      const botPos = this.bot.entity.position;
+      const playerPos = player.entity.position;
+      const dx = botPos.x - playerPos.x;
+      const dz = botPos.z - playerPos.z;
+      const dist = Math.sqrt(dx*dx + dz*dz);
+      
+      if (dist < 5 && player.entity.yaw !== undefined) {
+        // Calculate if player is looking at us (within 30 degrees)
+        const playerYaw = player.entity.yaw;
+        const targetYaw = Math.atan2(dz, dx);
+        const diff = Math.abs(playerYaw - targetYaw);
+        if (diff < Math.PI/6) { // Within 30 degrees
+          return 30; // Player is looking at us, likely to attack
+        }
+      }
+    } catch(e) {}
+    
+    return 0; // Default: no aggression detected
+  }
    
    _getOpportunityScore(player) {
      // Check for target isolation, distraction, low visibility
@@ -864,11 +986,12 @@ class PvPAddon {
     return enemies;
   }
 
-  _attack(target) {
+_attack(target) {
     const now = Date.now();
     const minDelay = 1000 / this.cps;
     
-    if (now - this.lastAttack < minDelay) return;
+    // Apply reaction time (human-like delay 50-200ms)
+    if (now - this.lastAttack < minDelay + this.reactionTime) return;
     this.lastAttack = now;
     this.lastAttackTime = now; // Set lastAttackTime for sprint reset
     
@@ -876,8 +999,12 @@ class PvPAddon {
       // ALWAYS sprint for knockback and speed
       this.bot.setControlState('sprint', true);
       
-      // Look at target - instant
-      this.bot.lookAt(target.entity.position);
+      // Look at target - instant with prediction
+      if (target._predictedPos) {
+        this.bot.lookAt(target._predictedPos, true);
+      } else {
+        this.bot.lookAt(target.entity.position, true);
+      }
       
       // Attack - multiple hits if possible
       this.bot.attack(target.entity);
@@ -887,54 +1014,21 @@ class PvPAddon {
       if (this.enableWTap) {
         this.bot.setControlState('forward', false);
         setTimeout(() => {
-          this.bot.setControlState('forward', true);
+          if (this.bot) this.bot.setControlState('forward', true);
           // Double W-tap for extra knockback
           setTimeout(() => {
-            this.bot.setControlState('forward', false);
-            setTimeout(() => this.bot.setControlState('forward', true), 30);
+            if (this.bot) this.bot.setControlState('forward', false);
+            setTimeout(() => {
+              if (this.bot) this.bot.setControlState('forward', true);
+            }, 30);
           }, 50);
-        }, 30);
+        }, 50);
       }
-      
-      // Circle strafe (fallback movement) - MORE AGGRESSIVE
-      if (this.enableStrafe && !this.useAdvanced) {
-        this.strafeAngle += 1.2; // Faster strafe changes
-        const cos = Math.cos(this.strafeAngle);
-        if (cos > 0) {
-          this.bot.setControlState('right', true);
-          this.bot.setControlState('left', false);
-        } else {
-          this.bot.setControlState('right', false);
-          this.bot.setControlState('left', true);
-        }
-        // Also move forward while strafing
-        this.bot.setControlState('forward', true);
-      }
-      
-      // Critical hits - ALWAYS try for max damage
-      if (this.enableCrits && !this.bot.entity.isInWater && !this.useAdvanced) {
-        this.bot.setControlState('jump', true);
-        setTimeout(() => this.bot.setControlState('jump', false), 80);
-      }
-      
-      // Sprint reset for knockback - more frequent
-      if (this.enableAntiKB && !this.useAdvanced) {
-        this.bot.setControlState('sprint', false);
-        setTimeout(() => this.bot.setControlState('sprint', true), 40);
-      }
-      
-      // Random jump for unpredictability (bunny hop)
-      if (Math.random() < 0.4) { // 40% chance
-        this.bot.setControlState('jump', true);
-        setTimeout(() => this.bot.setControlState('jump', false), 120);
-      }
-      
-    } catch(e) {
+    } catch (e) {
       this.combatStats.misses++;
-      // Silently ignore errors to prevent spam
     }
   }
-
+  
   _heal() {
     try {
       const foods = this.bot.inventory.items().filter(item => 
@@ -1250,6 +1344,15 @@ class PvPAddon {
       this.friendlyFire = !this.friendlyFire;
       this.logger.info('[PvP] Friendly fire: ' + (this.friendlyFire ? 'ENABLED' : 'DISABLED'));
       this.bot.chat('Friendly fire: ' + (this.friendlyFire ? 'ON' : 'OFF'));
+      
+      // Broadcast to all child bots
+      const children = this.engine.getSpawnedChildren ? this.engine.getSpawnedChildren() : [];
+      children.forEach(child => {
+        if (child && child.send) {
+          child.send({ type: 'friendlyFire', value: this.friendlyFire });
+        }
+      });
+      
       return;
     }
     
@@ -1287,17 +1390,17 @@ class PvPAddon {
       return;
     }
     
-    // Squad command - spawn 4-bot squad (owner + 3 bots)
+    // Squad command - spawn 5-bot squad (owner + 4 bots)
     if (message.startsWith('!squad')) {
-      this.bot.chat('Squad mode: Spawning 4-bot squad! Owner + 3 bots with gaming names');
-      this.logger.info('[PvP] Squad command - spawning 3 more bots + owner = 4-bot squad');
+      this.bot.chat('Squad mode: Spawning 5-bot squad! Owner + 4 bots with gaming names');
+      this.logger.info('[PvP] Squad command - spawning 4 more bots + owner = 5-bot squad');
       
       try {
         const { spawn } = require('child_process');
         const ownerName = this.bot.username;
         
-        // Spawn 3 squad bots with realistic gaming names (15s delay to avoid Aternos throttle)
-        for (let i = 0; i < 3; i++) {
+        // Spawn 4 squad bots with realistic gaming names (15s delay to avoid Aternos throttle)
+        for (let i = 0; i < 4; i++) {
           setTimeout(() => {
             const botName = this._generateGamingName(i);
             this.logger.info('[PvP] Spawning squad bot: ' + botName);
@@ -1323,11 +1426,11 @@ class PvPAddon {
              proc.unref();
              this.logger.info('[PvP] Spawned squad bot: ' + botName);
              this.friendlyBots.add(botName);
-          }, i * 15000); // 15 seconds between spawns
+          }, i * 5000); // 5 seconds between spawns
         }
         
-        this.bot.chat('4-bot squad spawning! 3 bots with gaming names joining now...');
-        this.logger.info('[PvP] 4-bot squad: Owner ' + ownerName + ' + 3 squad bots');
+        this.bot.chat('5-bot squad spawning! 4 bots with gaming names joining now...');
+        this.logger.info('[PvP] 5-bot squad: Owner ' + ownerName + ' + 4 squad bots');
       } catch (e) {
         this.logger.error('[PvP] Failed to spawn squad bots: ' + e.message);
         this.bot.chat('Failed to spawn squad bots: ' + e.message);
@@ -1376,7 +1479,7 @@ class PvPAddon {
             if (spawned % 10 === 0) {
               this.logger.info('[PvP] Spawned ' + spawned + '/' + count + ' army bots so far');
             }
-          }, i * 60000); // 60 seconds between spawns to avoid Aternos throttle
+          }, i * (Math.random() * 3000 + 3000)); // 3-6 seconds random delay between spawns to avoid Aternos throttle
         }
         
         this.bot.chat('Army of ' + count + ' bots spawning with gaming names! Will spawn over ~' + Math.ceil(count * 0.1) + ' seconds');

@@ -26,10 +26,86 @@ class BotEngine {
     this.running = false;
     this.shuttingDown = false;
     this.eventHandlers = new Map();
-    this.spawnedChildren = []; // Track spawned child processes for cleanup
+    this.spawnedChildren = [];
+    this.botNameRegistry = new Set();
+    this.admins = new Set(); // Track admin users
+    this.usingProxy = process.env.USE_PROXY === 'true';
+    this.proxyCheckInterval = null;
+    this.lastVerifiedIP = null;
+    this.currentProxy = null;
+    this.homeIP = null;
+    this.botNamePool = [
+      'BenderHero', 'DexEasy', 'XxRager', 'ProGamer', 'NoxViper', 'ShadowStrike',
+      'CyberNinja', 'PhantomX', 'BlazeFury', 'IceDragon', 'ThunderBolt', 'DarkKnight',
+      'SteelWarrior', 'InfernoMax', 'VortexPrime', 'EchoSniper', 'TitanForce', 'AquaStream',
+      'ToxicVenom', 'SolarFlare', 'LunarWolf', 'StormBreaker', 'IronGiant', 'MysticMage',
+      'SavageBeast', 'EliteOps', 'NightStalker', 'ChaosMaster', 'UltraBots', 'MegaPixel',
+      'PwnageUnit', 'FragFragger', 'RageQuit', 'SwagLord', 'Haxxor', 'OwnedYou',
+      'BotMaster', 'PvPPro', 'GriefKing', 'NoobDestroyer', 'CreeperKiller', 'ZombieSlayer'
+    ]; // Pool of gaming names
     
     this._setupSafetyCallbacks();
     this._setupSignalHandlers();
+    
+    // Detect home IP at startup (async but don't wait - non-blocking)
+    this._detectHomeIP().catch(() => {});
+  }
+  
+  async _detectHomeIP() {
+    const https = require('https');
+    const services = [
+      'https://api.ipify.org?format=json',
+      'https://ifconfig.me/json',
+      'https://icanhazip.com/'
+    ];
+    
+    for (const url of services) {
+      try {
+        const ip = await new Promise((resolve, reject) => {
+          https.get(url, (res) => {
+            let data = '';
+            res.on('data', chunk => data += chunk);
+            res.on('end', () => {
+              try {
+                const json = JSON.parse(data);
+                resolve(json.ip || data.trim());
+              } catch {
+                resolve(data.trim());
+              }
+            });
+          }).on('error', reject);
+        });
+        
+        if (ip && /^\d+\.\d+\.\d+\.\d+$/.test(ip)) {
+          this.homeIP = ip;
+          this.logger.info(`[ProxyManager] Detected home IP: ${ip}`);
+          return;
+        }
+      } catch (e) {
+        // Try next service
+      }
+    }
+    
+    // Fallback detection: try direct connection check
+    this.homeIP = 'DETECTING';
+    this.logger.warn('[ProxyManager] Could not auto-detect home IP, will detect on first direct connection');
+  }
+  
+  getUniqueBotName() {
+    // Generate goofy/rage-bait gaming names
+    const prefixes = ['xX', 'Xx', 'Pro', 'Epic', 'MLG', 'Noob', 'King', 'Lord', 'Dark', 'Shadow', 'Die', 'Swag', 'TryHard', 'Cringe', 'Omega', 'Ultra'];
+    const mids = ['Slayer', 'Killer', 'Master', 'Gamer', 'Legend', 'Pro', 'Beast', 'Warrior', 'Hacker', 'Destroyer', 'Bot', 'Noob', 'Rager', 'Smurf', 'Kid'];
+    const suffixes = ['2000', 'YT', 'Live', 'XD', 'Xx', '69', '420', 'OP', 'GG', 'EZ', '123', 'XD', 'LOL', 'RIP', 'AFK'];
+    
+    const prefix = prefixes[Math.floor(Math.random() * prefixes.length)];
+    const mid = mids[Math.floor(Math.random() * mids.length)];
+    const suffix = suffixes[Math.floor(Math.random() * suffixes.length)];
+    
+    // Randomly skip suffix 30% of time for shorter names
+    const name = Math.random() < 0.3 ? prefix + mid : prefix + mid + suffix;
+    
+    this.logger.info(`[Bot] Generated rage-bait name: ${name}`);
+    return name;
   }
 
   trackChildProcess(childProcess) {
@@ -61,6 +137,46 @@ class BotEngine {
     this.spawnedChildren = [];
   }
   
+  getSpawnedChildren() {
+    return this.spawnedChildren;
+  }
+  
+  // Admin methods
+  isAdmin(username) {
+    return this.admins.has(username);
+  }
+  
+  addAdmin(username) {
+    this.admins.add(username);
+    this.logger.info(`[Admin] Added admin: ${username}`);
+  }
+  
+  getAdmins() {
+    return Array.from(this.admins);
+  }
+  
+  addFriendlyBot(name) {
+    this.friendlyBots.add(name);
+    this.logger.info(`[Bot] Added friendly bot: ${name}`);
+  }
+  
+  generateBotName() {
+    // Generate goofy/rage-bait gaming names
+    const prefixes = ['xX', 'Xx', 'Pro', 'Epic', 'MLG', 'Noob', 'King', 'Lord', 'Dark', 'Shadow', 'Die', 'Swag', 'TryHard', 'Cringe', 'Omega', 'Ultra'];
+    const mids = ['Slayer', 'Killer', 'Master', 'Gamer', 'Legend', 'Pro', 'Beast', 'Warrior', 'Hacker', 'Destroyer', 'Bot', 'Noob', 'Rager', 'Smurf', 'Kid'];
+    const suffixes = ['2000', 'YT', 'Live', 'XD', 'Xx', '69', '420', 'OP', 'GG', 'EZ', '123', 'XD', 'LOL', 'RIP', 'AFK'];
+    
+    const prefix = prefixes[Math.floor(Math.random() * prefixes.length)];
+    const mid = mids[Math.floor(Math.random() * mids.length)];
+    const suffix = suffixes[Math.floor(Math.random() * suffixes.length)];
+    
+    // Randomly skip suffix 30% of time for shorter names
+    const name = Math.random() < 0.3 ? prefix + mid : prefix + mid + suffix;
+    
+    this.logger.info(`[Bot] Generated rage-bait name: ${name}`);
+    return name;
+  }
+  
   _setupSafetyCallbacks() {
     this.safety.on('throttle', (metrics) => {
       this.logger.warn('Safety throttle activated', metrics);
@@ -84,6 +200,29 @@ class BotEngine {
     
     process.on('SIGINT', shutdown);
     process.on('SIGTERM', shutdown);
+    
+    // IPC handler for child processes (receive messages from parent)
+    if (process.send) {
+      process.on('message', (msg) => {
+        this._handleIPCMessage(msg);
+      });
+      this.logger.info('IPC handler initialized for child process');
+    }
+  }
+  
+  _handleIPCMessage(msg) {
+    if (!msg || !msg.type) return;
+    
+    this.logger.info(`[IPC] Received: ${msg.type}`);
+    
+    if (msg.type === 'friendlyFire') {
+      // Update friendly fire setting
+      if (this.addons.has('pvp')) {
+        const pvp = this.addons.get('pvp');
+        pvp.friendlyFire = msg.value === true;
+        this.logger.info(`[IPC] Friendly fire set to: ${pv.friendlyFire}`);
+      }
+    }
   }
   
   registerAddon(addon) {
@@ -115,53 +254,263 @@ class BotEngine {
     this._connect();
   }
   
-  async _connect() {
-    if (this.shuttingDown) return;
-    
-    const authOptions = getAuthOptions(this.config.auth);
-    
-    const botOptions = {
-      host: this.config.server.host,
-      port: this.config.server.port,
-      username: authOptions.username,
-      auth: authOptions.auth,
-      version: this.config.server.version,
-      hideErrors: false
-    };
-    
-    if (authOptions.password) {
-      botOptions.password = authOptions.password;
+async _connect() {
+        if (this.shuttingDown) return;
+ 
+        const authOptions = getAuthOptions(this.config.auth);
+        
+        let botOptions = {
+            username: authOptions.username,
+            auth: authOptions.auth,
+            version: this.config.server.version,
+            hideErrors: false,
+            host: this.config.server.host,
+            port: this.config.server.port
+        };
+        
+        if (authOptions.password) {
+            botOptions.password = authOptions.password;
+        }
+        
+        // Proxy support - NO FALLBACK - keep trying until proxy works!
+        if (process.env.USE_PROXY === 'true') {
+            // Use random bot name from pool for fresh identity
+            const randomName = this.getUniqueBotName();
+            this.logger.info(`[ProxyManager] Using fresh bot name: ${randomName}`);
+            botOptions.username = randomName;
+            
+            await this._connectWithProxy(botOptions);
+            return;
+        }
+        
+        // Normal direct connection (no proxy)
+        this.logger.info(`Connecting to ${this.config.server.host}:${this.config.server.port} as ${authOptions.username}`);
+        
+        try {
+            this.bot = mineflayer.createBot(botOptions);
+            this._setupBotEvents();
+            
+            // Capture home IP on first direct connection for proxy detection
+            this.bot.once('login', () => {
+                try {
+                    const ip = this.bot._client.socket.remoteAddress;
+                    if (!this.homeIP || this.homeIP === 'DETECTING') {
+                        this.homeIP = ip;
+                        this.logger.info(`[ProxyManager] Captured home IP from direct connection: ${ip}`);
+                    }
+                } catch (e) {}
+            });
+        } catch (err) {
+            this.logger.error('Failed to create bot:', err.message);
+            this._handleDisconnect('Failed to create bot');
+        }
     }
     
-     // Use proxy if env var is set
-     if (process.env.USE_PROXY === 'true') {
-       try {
-         const ProxyManager = require('./utils/proxyManager');
-         const proxySocket = await ProxyManager.createProxiedSocket(
-           this.config.server.host,
-           this.config.server.port,
-           authOptions.username,
-           this.logger
-         );
-         botOptions.client = proxySocket;
-         this.logger.info('Using proxy connection');
-       } catch (e) {
-         this.logger.warn(`Failed to create proxy connection: ${e.message}, falling back to direct connection`);
-       }
-     }
-    
-    this.logger.info(`Connecting to ${this.config.server.host}:${this.config.server.port} as ${authOptions.username}`);
-    
-    try {
-      this.bot = mineflayer.createBot(botOptions);
-      this._setupBotEvents();
-    } catch (err) {
-      this.logger.error('Failed to create bot:', err.message);
-      this._handleDisconnect('Failed to create bot');
+    async _connectWithProxy(botOptions) {
+        const ProxyManager = require('./utils/proxyManager');
+        
+        const proxyConfig = this.config.proxy || {
+            enabled: true,
+            rotationStrategy: 'random',
+            minHealthScore: 0.3,
+            maxLatency: 5000,
+            blacklistThreshold: 3,
+            preferredCountries: [],
+            refreshInterval: 900000,
+            enableGeoIP: true
+        };
+        
+        this.proxyManager = new ProxyManager(proxyConfig, this.logger);
+        
+        // Fetch raw proxies immediately - no waiting for validation!
+        this.logger.info('[ProxyManager] Fetching proxies...');
+        await this.proxyManager.fetchAndValidate();
+        this.logger.info(`[ProxyManager] Got ${this.proxyManager.proxies.size} proxies ready to try`);
+        
+        // Also start background validation to improve pool
+        this.proxyManager.fetchAndValidate().catch(() => {}); // Don't wait
+        
+        // Try up to 500 proxies - should find one fast!
+        let attempts = 0;
+        const maxAttempts = 500;
+        
+        while (attempts < maxAttempts) {
+            attempts++;
+            
+            // Get any proxy - tests LIVE when connecting!
+            const proxy = this.proxyManager.getAnyProxy();
+            if (!proxy) {
+                // Refetch if empty
+                this.logger.info('[ProxyManager] Refetching proxies...');
+                await this.proxyManager.fetchAndValidate();
+                await this._sleep(2000);
+                continue;
+            }
+            
+            this.logger.info(`[ProxyManager] Attempt ${attempts}: Trying ${proxy.address} (${proxy.type})`);
+            
+            try {
+                const { SocksProxyAgent } = require('socks-proxy-agent');
+                const proxyUrl = `${proxy.type}://${proxy.address}`;
+                const agent = new SocksProxyAgent(proxyUrl);
+                
+                // Set global proxy env vars for ALL http/https requests
+                process.env.HTTP_PROXY = proxyUrl;
+                process.env.HTTPS_PROXY = proxyUrl;
+                // Also try setting for global-agent if available
+                try { require('global-agent').bootstrap(); } catch(e) {}
+                
+                // Use socks-proxy-agent for proper proxy routing!
+                const options = {
+                    ...botOptions,
+                    host: this.config.server.host,
+                    port: this.config.server.port,
+                    connectTimeout: 30000,
+                    agent: agent
+                };
+                
+                this.logger.info(`[ProxyManager] → ${options.host}:${options.port} via SOCKS agent ${proxy.address}`);
+                
+                this.bot = mineflayer.createBot(options);
+                
+                // Wait for login
+                await new Promise((resolve, reject) => {
+                    const timeout = setTimeout(() => {
+                        this.bot.quit();
+                        reject(new Error('Login timeout'));
+                    }, 25000);
+                    
+                    this.bot.once('login', () => {
+                        clearTimeout(timeout);
+                        this.currentProxy = proxy.address;
+                        this.proxyManager.recordResult(proxy.address, true, proxy.latency);
+                        
+                        // Get socket, verify proxy is being used
+                        try {
+                            const socket = this.bot._client.socket;
+                            const remoteAddr = socket.remoteAddress;
+                            this.logger.info(`[ProxyManager] ✅ Connected through proxy ${proxy.address}`);
+                            this.logger.info(`[ProxyManager] Connection IP: ${remoteAddr}`);
+                            
+                            // STRICT: Reject if shows home IP - NEVER allow direct connection!
+                            if (this.homeIP && remoteAddr === this.homeIP) {
+                                this.logger.error(`[ProxyManager] 🚫 BLOCKED - Home IP (${remoteAddr}) detected! Rejecting connection.`);
+                                this.bot.quit();
+                                this.proxyManager.recordResult(proxy.address, false);
+                                reject(new Error('Home IP detected - blocked'));
+                                return;
+                            }
+                            
+                            this.logger.info(`[ProxyManager] 🔒 Proxy active - different IP verified!`);
+                            
+                            // Add aggressive periodic check (every 10s) to catch IP leaks early
+                            this.lastVerifiedIP = remoteAddr;
+                            this.proxyCheckInterval = setInterval(() => {
+                                if (!this.bot || !this.bot._client || !this.bot._client.socket) return;
+                                
+                                const currentIP = this.bot._client.socket.remoteAddress;
+                                this.logger.info(`[ProxyManager] Active check - ${currentIP}`);
+                                
+                                // STRICT: If IP becomes home IP → kill connection immediately!
+                                if (this.homeIP && currentIP === this.homeIP) {
+                                    this.logger.error(`[ProxyManager] 🚫 IP LEAK DETECTED! Home IP (${currentIP}) - killing connection.`);
+                                    this.bot.quit();
+                                    this._handleDisconnect('IP leak to home IP detected');
+                                    return;
+                                }
+                                
+                                // Warn if IP changed to different proxy
+                                if (this.lastVerifiedIP && currentIP !== this.lastVerifiedIP) {
+                                    this.logger.warn(`[ProxyManager] ⚠️ IP changed from ${this.lastVerifiedIP} to ${currentIP}`);
+                                    this.lastVerifiedIP = currentIP;
+                                }
+                            }, 10000);
+                            
+                        } catch(e) {
+                            this.logger.info(`[ProxyManager] Could not verify socket`);
+                        }
+                        
+                        this._setupBotEvents();
+                        resolve();
+                    });
+                    
+                    this.bot.once('error', (err) => {
+                        clearTimeout(timeout);
+                        this.proxyManager.recordResult(proxy.address, false);
+                        reject(err);
+                    });
+                });
+                
+                return; // Connected!
+                
+            } catch (err) {
+                this.logger.warn(`[ProxyManager] ❌ ${proxy.address} failed: ${err.message}`);
+                this.proxyManager.recordResult(proxy.address, false);
+                
+                // Brief pause, then try next
+                await this._sleep(300);
+                continue;
+            }
+        }
+        
+        // All attempts exhausted - retry with fresh proxies
+        this.logger.error('[ProxyManager] All proxies tried, refetching...');
+        setTimeout(() => this._connectWithProxy(botOptions), 3000);
     }
-  }
-  
-  _setupBotEvents() {
+    
+    async _tryProxy(proxy, botOptions, attemptNum) {
+        this.logger.info(`[ProxyManager] Attempt ${attemptNum}: Trying ${proxy.address} (${proxy.type})`);
+        
+        try {
+            const { SocksProxyAgent } = require('socks-proxy-agent');
+            const agent = new SocksProxyAgent(`${proxy.type}://${proxy.address}`);
+            
+            // KEEP host and port - they are the TARGET server!
+            // The agent handles routing THROUGH the proxy TO this target
+            const options = {
+                ...botOptions,
+                agent: agent
+            };
+            
+            this.logger.info(`[ProxyManager] Connecting via ${proxy.address} → ${options.host}:${options.port}`);
+            
+            this.bot = mineflayer.createBot(options);
+            
+            await new Promise((resolve, reject) => {
+                const timeout = setTimeout(() => {
+                    this.bot.quit();
+                    reject(new Error('Login timeout'));
+                }, 30000);
+                
+                this.bot.once('login', () => {
+                    clearTimeout(timeout);
+                    this.currentProxy = proxy.address;
+                    this.proxyManager.recordResult(proxy.address, true, proxy.latency);
+                    this.logger.info(`[ProxyManager] ✅ Connected via ${proxy.address}!`);
+                    this._setupBotEvents();
+                    resolve();
+                });
+                
+                this.bot.once('error', (err) => {
+                    clearTimeout(timeout);
+                    this.proxyManager.recordResult(proxy.address, false);
+                    reject(err);
+                });
+            });
+        } catch (err) {
+            this.logger.warn(`[ProxyManager] ❌ ${proxy.address} failed: ${err.message}`);
+            this.proxyManager.recordResult(proxy.address, false);
+            
+            await this._sleep(500);
+            await this._connectWithProxy(botOptions);
+        }
+    }
+    
+    _sleep(ms) {
+        return new Promise(resolve => setTimeout(resolve, ms));
+    }
+    
+    _setupBotEvents() {
     this.bot.once('login', () => {
       this.logger.info('Bot logged in successfully');
       this.reconnectManager.reset();
@@ -184,6 +533,13 @@ class BotEngine {
     
     this.bot.on('kicked', (reason) => {
       this.logger.warn('Bot kicked:', reason);
+      
+      // Check if kicked for IP-related reasons
+      if (reason && reason.includes('ip')) {
+        this.logger.warn('[ProxyManager] Kicked due to IP issue - forcing reconnect with proxy');
+        // Force proxy mode if USE_PROXY was set
+      }
+      
       this._handleDisconnect('Kicked');
     });
     
@@ -401,6 +757,12 @@ class BotEngine {
   _handleDisconnect(reason) {
     if (this.shuttingDown) return;
     
+    // Clear proxy checking interval
+    if (this.proxyCheckInterval) {
+      clearInterval(this.proxyCheckInterval);
+      this.proxyCheckInterval = null;
+    }
+    
     this.logger.info(`Handling disconnect: ${reason}`);
     
     // Stop all spawned child processes on disconnect
@@ -414,6 +776,12 @@ class BotEngine {
           this.logger.error(`Addon cleanup failed: ${name}`, err.message);
         }
       }
+    }
+    
+    // Preserve proxy mode if was using proxy
+    if (this.usingProxy) {
+      this.logger.info('[ProxyManager] Reconnecting WITH proxy...');
+      // USE_PROXY stays in env, _connect() will check it
     }
     
     if (this.reconnectManager.shouldReconnect()) {
@@ -461,6 +829,12 @@ class BotEngine {
     
     this.shuttingDown = true;
     this.logger.info('Stopping bot...');
+    
+    // Clear proxy checking interval
+    if (this.proxyCheckInterval) {
+      clearInterval(this.proxyCheckInterval);
+      this.proxyCheckInterval = null;
+    }
     
     // Stop all spawned child processes first
     this.stopAllChildren();

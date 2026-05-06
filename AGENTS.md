@@ -1,36 +1,86 @@
-# BetterBender PvP Bot - Agent Guidance
+# PvP Bot - Agent Guidance
 
 ## Project Overview
-- PvP bot for Minecraft using Mineflayer, based on BetterBender engine
-- Provides combat features (auto-attack, W-tap, strafing, crits, healing)
-- Toggled via `!pvp` chat command from owner
-- Connects to MrNova420.aternos.me:31267 (offline mode)
+- Minecraft PvP bot using Mineflayer 4.25.0 + BetterBender engine
+- Combat features: auto-attack, W-tap, strafing, crits, healing
+- Toggled via `!pvp` chat command from owner/admins
+- Enhanced proxy support (SOCKS5 only) to avoid Aternos throttling
+- Rage-bait goofy gaming names (random generation)
+- Smart AI with reaction time, prediction, tactical modes
 
 ## Key Files
-- Engine: `src/engine.js` (main loop, loads addons)
-- PvP Addon: `addons/pvp.js` (combat logic)
-- Config: `CONFIG.json` (server, pvpMode, addons toggles)
-- Entry: `cli.js` (starts engine) or `npm start`
+- Engine: `src/engine.js` (admin tracking, IPC handler, bot management)
+- PvP Addon: `addons/pvp.js` (combat AI, tactics, friendly fire)
+- Command Handler: `src/core/commandHandler.js` (all chat commands)
+- Proxy Manager: `src/utils/proxyManager.js`
+- Proxy Sources: `src/utils/proxySources.js` (20+ sources, SOCKS only)
+- Config: `CONFIG.json`
 
-## Development Commands
-- Start: `npm start` or `node cli.js`
-- Setup: `npm run setup` (first-time config)
-- Test: `npm test` (runs test/smoke.js)
-- PM2: `npm run pm2:start` etc.
+## Commands
+All commands use `!` prefix. See `COMMANDS.md` for full reference.
 
-## Important Conventions
-- **DO NOT** run `npm install` after pulling without checking versions - it may install incompatible mineflayer versions causing kicks. Use committed node_modules or verify package-lock.json matches working versions.
-- Config changes in CONFIG.json require restart to take effect.
-- Addons toggled in CONFIG.json > addons section.
-- PvP mode is default (mode.current = "pvp" in CONFIG.json).
-- All custom code lives in `/addons/` and `/src/`; prefer extending existing files.
+**Owner/Admin Only:**
+- `!admin <player>` - Add admin user
+- `!pvp` - Toggle PvP mode
+- `!ff` - Toggle friendly fire
+- `!guard [player]` - Guard/protect player
+- `!squad` - Spawn 5-bot squad
+- `!army [count]` - Spawn 100+ bots
+- `!give <amount> <player>` - Give bots to player (they follow/protect)
 
-## Troubleshooting
-- If kicked with "multiplayer.disconnect.invalid_player_movement": check that node_modules versions match working set (see BetterBender-Bot-Improved for reference).
-- Ensure mineflayer version is compatible with server (currently 4.20.1).
-- Check logs in `data/logs/` for runtime issues.
+**Everyone:**
+- `!help [cmd]` - Show commands
+- `!status` - Bot status
+- `!come` - Come to you
+- `!follow [player]` - Follow player
+- `!stop` - Stop action
+- `!inv` - Inventory
+- `!give <item> [amt] [player]` - Give items
+- `!craft <item> [amt]` - Craft item
+- `!mine <block>` - Mine block
+- `!build <type>` - Build structure
+- `!home` - Go home
+- `!sleep` - Sleep
+- `!mode <afk|player>` - Switch mode
+- `!progress` - Show progression
+- `!mood` - Show AI status
 
-## Repository Notes
-- node_modules is committed (unusual but required for stable builds). Do NOT gitignore.
-- Package versions are locked via package-lock.json; updates should be tested carefully.
-- This bot is designed for 24/7 operation with safety monitors (CPU/memory limits).
+## How It Works
+1. Start with `USE_PROXY=true node cli.js`
+2. On startup: auto-detects home IP via ipify/ifconfig.me
+3. On connect: uses **random bot name** from pool (fresh identity)
+4. Fetches SOCKS5 proxies → attempts connection via socks-proxy-agent
+5. Sets `HTTP_PROXY`/`HTTPS_PROXY` for ALL http/https traffic
+6. On login: verifies socket IP, **BLOCKS** if matches home IP
+7. On 10s interval: checks IP, **kills** if leaks to home IP
+8. On kick/IP issue: preserve proxy mode for reconnect
+
+## Features
+- **Auto-detects home IP** - queries ipify/ifconfig.me at startup
+- **Random bot names** - rage-bait goofy names (ProRager, XxTryHardxx, etc.)
+- **Global proxy env** - sets HTTP_PROXY/HTTPS_PROXY for all traffic
+- **Strict blocking** - rejects connection if socket IP = home IP
+- **Aggressive monitoring** - 10s interval kills if IP leaks
+- **Future-proof** - no hardcoded IPs
+- **Reaction time** - human-like delay (50-200ms)
+- **Smart prediction** - uses velocity + acceleration
+- **Tactical modes** - aggressive, defensive, hitAndRun, surround, flank
+- **Admin system** - owner can add admins, admins can control bots
+- **Friendly fire propagation** - toggles to all squad/army bots
+- **Give bots** - spawn bots that follow/protect a player
+
+## Development Notes
+- node_modules is committed - do NOT gitignore
+- Package versions locked via package-lock.json
+- Proxy feature logs "Connection IP:" after login to verify routing
+- Command handler in `src/core/commandHandler.js` handles ALL commands
+- PvP addon registers its commands with main handler
+- Admin users stored in engine.admins Set
+- Friendly fire broadcasts to all child processes via IPC
+
+## Known Issues
+- Free SOCKS proxies get detected/routed by Aternos - consider paid residential proxies for full anonymity
+- Some proxies fail immediately (ECONNRESET) - system auto-retries with next proxy
+- CONFIG.json host should NOT include port number
+- Command handler must check admin rights for restricted commands
+- IPC messages require child processes to be spawned with `detached: true`

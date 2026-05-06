@@ -2,10 +2,12 @@ class ReconnectManager {
   constructor(config = {}, logger = null) {
     this.logger = logger || console;
     this.enabled = config.enabled !== false;
-    this.maxAttempts = config.maxAttempts || Infinity; // Unlimited retries for Aternos throttle
+    this.unlimitedMode = config.unlimitedMode !== false;
+    this.minDelayMs = config.minDelayMs || 5000;
+    this.maxDelayMs = config.maxDelayMs || 15000;
     this.initialDelayMs = config.initialDelayMs || 5000;
-    this.maxDelayMs = config.maxDelayMs || 60000;
-    this.backoffMultiplier = config.backoffMultiplier || 1.5;
+    this.maxDelayMsConfig = config.maxDelayMs || 15000;
+    this.backoffMultiplier = config.backoffMultiplier || 1;
     
     this.attempts = 0;
     this.reconnectTimeout = null;
@@ -15,13 +17,14 @@ class ReconnectManager {
   
   shouldReconnect() {
     if (!this.enabled) return false;
-    if (this.attempts >= this.maxAttempts) {
-      this.logger.error(`Max reconnect attempts (${this.maxAttempts}) reached`);
+    
+    if (!this.unlimitedMode && this.attempts >= 75) {
+      this.logger.error(`Max reconnect attempts (75) reached`);
       return false;
     }
     
-    if (this.lastErrorType === 'ECONNREFUSED' && this.consecutiveFailures > 5) {
-      this.logger.warn(`Server appears to be offline (${this.consecutiveFailures} connection refused). Slowing reconnect attempts.`);
+    if (this.lastErrorType === 'ECONNREFUSED' && this.consecutiveFailures > 10) {
+      this.logger.warn(`Server appears to be offline (${this.consecutiveFailures} connection refused). Using longer delays.`);
       return true;
     }
     
@@ -29,15 +32,13 @@ class ReconnectManager {
   }
   
   getDelay() {
-    let baseDelay = this.initialDelayMs * Math.pow(this.backoffMultiplier, this.attempts);
-    
-    if (this.lastErrorType === 'ECONNREFUSED' && this.consecutiveFailures > 5) {
-      const offlineDelay = Math.min(baseDelay * 3, 180000);
-      return Math.round(offlineDelay);
+    if (this.lastErrorType === 'ECONNREFUSED' && this.consecutiveFailures > 10) {
+      const offlineDelay = Math.floor(Math.random() * 10000) + 15000;
+      return offlineDelay;
     }
     
-    const delay = Math.min(baseDelay, this.maxDelayMs);
-    return Math.round(delay);
+    const delay = Math.floor(Math.random() * (this.maxDelayMs - this.minDelayMs)) + this.minDelayMs;
+    return delay;
   }
   
   scheduleReconnect(callback) {
@@ -46,7 +47,11 @@ class ReconnectManager {
     const delay = this.getDelay();
     this.attempts++;
     
-    this.logger.info(`Reconnecting in ${delay}ms (attempt ${this.attempts}/${this.maxAttempts})`);
+    if (this.unlimitedMode) {
+      this.logger.info(`Reconnecting in ${delay}ms (attempt ${this.attempts}/unlimited)`);
+    } else {
+      this.logger.info(`Reconnecting in ${delay}ms (attempt ${this.attempts}/75)`);
+    }
     
     this.reconnectTimeout = setTimeout(() => {
       callback();

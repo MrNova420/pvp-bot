@@ -9,9 +9,6 @@
     "username": "xxTryHardxx",
     "password": ""
   },
-  "owner": {
-    "username": "Super_nova94332"
-  },
   "mode": {
     "current": "pvp",
     "autoSwitch": false
@@ -31,10 +28,9 @@
   },
   "reconnect": {
     "enabled": true,
-    "maxAttempts": 75,
-    "initialDelayMs": 5000,
-    "maxDelayMs": 60000,
-    "backoffMultiplier": 1.5
+    "unlimitedMode": true,
+    "minDelayMs": 5000,
+    "maxDelayMs": 15000
   },
   "logging": {
     "level": "info",
@@ -64,8 +60,7 @@
     "autoPotion": false,
     "rangedEnabled": false,
     "crystalEnabled": false,
-    "revengeEnabled": true,
-    "combatStyle": "hybrid"
+    "revengeEnabled": true
   },
   "addons": {
     "afk": true,
@@ -76,5 +71,8 @@
     "crafting": false,
     "trading": false,
     "superPathfinder": false
+  },
+  "owner": {
+    "username": "Super_nova94332"
   }
 }
