@@ -62,14 +62,80 @@ if (!validNameRegex.test(botName)) { /* use random name */ }
 
 **Solution**: Removed entire _handleChat method (~160 lines), all functionality moved to CommandHandler
 
+### 8. Mode Routing Fix (HIGH - FIXED)
+**Problem**: update() duplicated combat handling already done by _combatLoop()
+
+**Solution**: update() now only routes follow/crystal/pvm/pve modes. Combat handled exclusively by _combatLoop()
+
+### 9. Feature Activation (HIGH - FIXED)
+**Problem**: 69+ features in a1-bot.js were coded but not all activating
+
+**Solution**: 
+- enable() now starts combat mode with auto-attack
+- 11 soldier commands registered in CommandHandler
+- Advanced PvP engine properly integrated
+
+## All a1-bot Features (69+ Active)
+
+### Offensive Techniques
+- Auto-attack at configurable CPS (8 default)
+- Packet-based critical hits (advanced)
+- W-Tap sprint reset for knockback
+- End Crystal PvP with configurable delay
+- Weapon switching to best available
+- Axe shield breaking (advanced)
+
+### Defensive Techniques
+- Anti-knockback sprint toggle
+- KB cancel via jump (advanced)
+- Auto-shield (advanced)
+- On-hit backoff
+- Distance management (too-close backpedal)
+- Auto-healing with 19 food types
+
+### Movement Strategies
+- Intelligent strafe (advanced)
+- Circular strafing (sine wave)
+- Jump pursuit for crits
+- Sprint pursuit
+- Predictive following (10 ticks)
+- Jump dodging
+- Tactical backoff
+
+### Targeting (8-Factor Scoring)
+- Velocity + acceleration prediction
+- Armor value calculation
+- Weapon threat assessment (5 tiers)
+- Aggression detection
+- Opportunity scoring (isolation, distraction, visibility)
+- Environmental advantage
+- Ally counting
+- Target persistence (score delta of 20 for switch)
+
+### AI Decision Making
+- Outnumbered retreat (3+ enemies, <12 HP)
+- Critical health heal/retreat (<8 HP)
+- Aggressive fleeing target chase (>2x range)
+- Focus weakest target
+- Tactical mode auto-switching (5 rules)
+- CPS adjustment for defense
+- Reaction time randomization (50-200ms)
+
+### Tactical Modes (Auto-Switching)
+- aggressive: Sprint on, high strafe, minimal backoff
+- defensive: No sprint, balanced strafe, high backoff
+- hitAndRun: Sprint on, moderate strafe, high backoff
+- surround: Sprint on, max strafe, minimal backoff
+- flank: Sprint on, low strafe, moderate backoff
+
 ## Key Files
 
 | File | Purpose |
 |------|---------|
 | `src/engine.js` | Bot engine, addon loading, auto-enable, proxy management |
-| `addons/a1-bot.js` | Merged PvP addon (1871 lines) - combat, following, squad/army spawning |
-| `addons/super-pathfinder.js` | Merged pathfinding (57 lines) |
-| `src/core/commandHandler.js` | All chat commands (540 lines, 29 commands) |
+| `addons/a1-bot.js` | Merged PvP addon (1998 lines) - combat, following, squad/army spawning |
+| `addons/super-pathfinder.js` | Merged pathfinding (188 lines) |
+| `src/core/commandHandler.js` | All chat commands (559 lines, 29 commands) |
 | `src/utils/proxyManager.js` | Proxy fetching, validation |
 | `CONFIG.json` | Server, auth, addons, combat settings |
 
@@ -79,12 +145,9 @@ if (!validNameRegex.test(botName)) { /* use random name */ }
 | Addon | File | Status | Description |
 |-------|------|--------|-------------|
 | **a1-bot** | `addons/a1-bot.js` | ✅ Enabled | Main PvP/combat system - merged from 5 files |
-| **player** | `addons/player.js` | ✅ Enabled | Player behavior, AI decisions, mood system |
-| **player-basic** | `addons/player-basic.js` | ✅ Enabled | Basic player movements and actions |
-| **super-pathfinder** | `addons/super-pathfinder.js` | ✅ Enabled | Merged navigation (3 files combined) |
-| **mining** | `addons/mining.js` | ✅ Enabled | Mine blocks, !mine command |
-| **building** | `addons/building.js` | ✅ Enabled | Build structures, !build command |
-| **crafting** | `addons/crafting.js` | ✅ Enabled | Craft items, !craft command |
+| **super-pathfinder** | `addons/super-pathfinder.js` | ✅ Enabled | Merged navigation |
+| | | | |
+| | | | |
 
 ### Disabled by Default:
 | Addon | File | Status | Description |
@@ -92,6 +155,10 @@ if (!validNameRegex.test(botName)) { /* use random name */ }
 | afk | `addons/afk.js` | ❌ Disabled | AFK mode, idle behavior |
 | trading | `addons/trading.js` | ❌ Disabled | Trade with villagers |
 | player-interactions | `addons/player-interactions.js` | ❌ Disabled | Handle player chat requests |
+| player | `addons/player.js` | ❌ Disabled | Player behavior (disabled for stability) |
+| building | `addons/building.js` | ❌ Disabled | Build structures |
+| mining | `addons/mining.js` | ❌ Disabled | Mine blocks |
+| crafting | `addons/crafting.js` | ❌ Disabled | Craft items |
 
 ### Moved to archive/ (redundant):
 - `addons/archive/pvp.js` - Functionality merged into a1-bot.js
@@ -140,55 +207,40 @@ All commands processed by `src/core/commandHandler.js`. Commands use `!` prefix.
 | `!squad` | `!squad` | Spawn 5-bot squad |
 | `!army` | `!army` | Spawn 10-bot army |
 
+### Soldier Commands (11):
+| Command | Usage | Description |
+|----------|-------|-------------|
+| `!soldier follow` | `!soldier follow <player>` | Follow player |
+| `!soldier guard` | `!soldier guard <target>` | Guard location/player |
+| `!soldier attack` | `!soldier attack <entity>` | Attack entity |
+| `!soldier gather` | `!soldier gather <resource> [amt]` | Gather resources |
+| `!soldier build` | `!soldier build <structure>` | Build structure |
+| `!soldier go` | `!soldier go <x> <y> <z>` | Move to coordinates |
+| `!soldier patrol` | `!soldier patrol <area>` | Patrol area |
+| `!soldier status` | `!soldier status` | Status report |
+| `!soldier flee` | `!soldier flee` | Flee immediately |
+| `!soldier stop` | `!soldier stop` | Stop all tasks |
+| `!soldier help` | `!soldier help` | Help listing |
+
 ## How It Works
 
 1. **Startup**: `node cli.js` or `USE_PROXY=true node cli.js`
 2. **Bot Name**: Random from pool OR BOT_NAME env var (validated 3-16 alphanumeric)
 3. **Addons**: Loaded from CONFIG.json `addons` section
-4. **Auto-enable**: Matches config `mode.current` OR special case for "pvp" → "a1-bot"
+4. **Auto-enable**: All enabled addons auto-enable on spawn
 5. **Commands**: ALL processed by CommandHandler (single source of truth)
 6. **Proxy**: SOCKS5 via socks-proxy-agent with retry limit (10 max)
 7. **IP Check**: Auto-detect home IP, block if connection IP matches
+8. **Combat**: a1-bot auto-starts in combat mode with advanced PvP
 
 ## Proxy System
 
-- **Problem**: Aternos detects/free SOCKS proxies via IP database
-- **Solution**: socks-proxy-agent for proper SOCKS5 support
-- **Home IP**: Auto-detects via ipify.org/ifconfig.me at startup
-- **Strict Blocking**: Rejects connection if socket IP = home IP
-- **Monitoring**: 10-second interval checks for IP leaks
-- **Retry Limit**: Max 10 retries with exponential backoff
-- **Validation**: Tests proxies before use
-
-## Features
-
-- **Auto-detects home IP** - queries ipify/ifconfig.me at startup
-- **Random bot names** - rage-bait goofy names (ProRager, XxTryHardxx, etc.)
-- **Global proxy env** - sets HTTP_PROXY/HTTPS_PROXY for all traffic
-- **Strict blocking** - rejects connection if socket IP = home IP
-- **Aggressive monitoring** - 10s interval kills if IP leaks
-- **Reaction time** - human-like delay (50-200ms)
-- **Smart prediction** - uses velocity + acceleration
-- **Tactical modes** - aggressive, defensive, hitAndRun, surround, flank
-- **Admin system** - owner can add admins, admins can control bots
-- **Friendly fire propagation** - toggles to all squad/army bots via IPC
-- **Multi-bot spawning** - up to 100 bots per owner
-- **Addon system** - enable/disable addons via CONFIG.json
-
-## Development Notes
-
-- node_modules is committed - do NOT gitignore
-- Package versions locked via package-lock.json
-- **All commands now in CommandHandler** - single source of truth
-- **a1-bot addon NO LONGER has chat listener** - all commands via CommandHandler
-- **Auto-enable logic**: `name === currentMode || (currentMode === 'pvp' && name === 'a1-bot')`
-- **Proxy retry**: Max 10 with exponential backoff (3s → 6s → 12s → 24s → max 30s)
-- **BOT_NAME validation**: 3-16 alphanumeric characters only
-- Admin users stored in engine.admins Set
-- Friendly fire broadcasts to all child processes via IPC
-- Each bot gets unique name via BOT_NAME env var
-- PID tracking in `/tmp/pvp-bot-pids.json`
-- Max 100 bots per owner (configurable in multi.js)
+- **Sources**: 7 SOCKS5 proxy sources only (no HTTP)
+- **Connect**: socks-proxy-agent
+- **Verify**: Check socket IP ≠ home IP
+- **Monitor**: 10s interval for IP leaks
+- **Retry**: 10 max with exponential backoff (3s→6s→12s→24s→30s)
+- **Lifetime**: Same proxy for bot's full lifecycle
 
 ## Testing Commands
 
@@ -199,7 +251,7 @@ node cli.js
 # Test with proxy
 USE_PROXY=true node cli.js
 
-# Test specific command
+# Test commands
 !test   # Verify chat working
 !status # Check health/position
 !pvp    # Toggle combat mode
@@ -207,6 +259,7 @@ USE_PROXY=true node cli.js
 !guard  # Start guarding
 !squad  # Spawn 5 bots
 !army   # Spawn 10 bots
+!soldier status  # Soldier status report
 ```
 
 ## Known Issues
