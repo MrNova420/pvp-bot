@@ -22,7 +22,7 @@ class BotEngine {
     
     this.bot = null;
     this.addons = new Map();
-    this.currentMode = config.mode?.current || 'afk';
+    this.currentMode = config.mode?.current || 'pvp'; // Default to pvp, not afk
     this.running = false;
     this.shuttingDown = false;
     this.eventHandlers = new Map();
@@ -47,8 +47,44 @@ class BotEngine {
     this._setupSafetyCallbacks();
     this._setupSignalHandlers();
     
+    // Auto-load addons based on config
+    this._autoLoadAddons();
+    
     // Detect home IP at startup (async but don't wait - non-blocking)
     this._detectHomeIP().catch(() => {});
+  }
+  
+  _autoLoadAddons() {
+    const fs = require('fs');
+    const path = require('path');
+    const addonsDir = path.join(__dirname, '../addons');
+    
+    if (!fs.existsSync(addonsDir)) {
+      this.logger.warn('[Addon] Addons directory not found');
+      return;
+    }
+    
+    const addonFiles = fs.readdirSync(addonsDir)
+      .filter(f => f.endsWith('.js') && !f.includes('.backup'));
+    
+    for (const file of addonFiles) {
+      try {
+        const AddonClass = require(path.join(addonsDir, file));
+        const addonName = file.replace('.js', '');
+        
+        // Only load addons that are explicitly in config and set to true
+        const enabled = this.config.addons && this.config.addons[addonName] === true;
+        
+        if (enabled) {
+          this.registerAddon(AddonClass);
+          this.logger.info(`[Addon] Auto-loaded: ${addonName}`);
+        } else {
+          this.logger.debug(`[Addon] Skipped (not enabled): ${addonName}`);
+        }
+      } catch (err) {
+        this.logger.error(`[Addon] Failed to load ${file}:`, err.message);
+      }
+    }
   }
   
   async _detectHomeIP() {
@@ -254,10 +290,16 @@ class BotEngine {
     this._connect();
   }
   
-async _connect() {
+  async _connect() {
         if (this.shuttingDown) return;
- 
+  
         const authOptions = getAuthOptions(this.config.auth);
+        
+        // Override username if BOT_NAME env var is set (for multi-bot spawning)
+        if (process.env.BOT_NAME) {
+          authOptions.username = process.env.BOT_NAME;
+          this.logger.info(`[Engine] Using bot name from env: ${authOptions.username}`);
+        }
         
         let botOptions = {
             username: authOptions.username,
@@ -629,18 +671,18 @@ async _connect() {
       try {
         addon.init(this.bot, this);
         this.logger.info(`Addon initialized: ${name}`);
+        
+        // Auto-enable addon if it matches current mode
+        if (name === this.currentMode && addon.enable) {
+          setTimeout(() => {
+            addon.enable();
+            this.logger.info(`Auto-enabled ${name} mode addon`);
+          }, 500);
+        }
       } catch (err) {
         this.logger.error(`Failed to initialize addon ${name}:`, err.message);
       }
     }
-    
-    setTimeout(() => {
-      const currentAddon = this.addons.get(this.currentMode);
-      if (currentAddon && !currentAddon.enabled && currentAddon.enable) {
-        this.logger.info(`Ensuring ${this.currentMode} mode is enabled`);
-        currentAddon.enable();
-      }
-    }, 1000);
     
     this._setupCorePlayerBehaviors();
     this._emit('bot_ready');
@@ -947,13 +989,20 @@ if (require.main === module) {
   
   const config = JSON.parse(fs.readFileSync(configPath, 'utf8'));
   
+  // Save PID for tracking
+  const os = require('os');
+  const PID_FILE = path.join(os.tmpdir(), 'pvp-bot-pids.json');
+  let pids = [];
+  if (fs.existsSync(PID_FILE)) {
+    pids = JSON.parse(fs.readFileSync(PID_FILE, 'utf8'));
+  }
+  pids.push(process.pid);
+  fs.writeFileSync(PID_FILE, JSON.stringify(pids));
+  
   const engine = new BotEngine(config);
   
-  const AFKAddon = require('../addons/afk');
-  const PvPAddon = require('../addons/pvp');
-  
-  engine.registerAddon(AFKAddon);
-  engine.registerAddon(PvPAddon);
+  // Addons are auto-loaded in constructor based on CONFIG.json
+  engine.logger.info(`[Engine] Addons registered: ${Array.from(engine.addons.keys()).join(', ')}`);
   
   engine.start();
 }

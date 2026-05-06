@@ -144,9 +144,9 @@ class CommandHandler {
       }
     });
     
-    this.registerCommand('give', {
+    this.registerCommand('giveitem', {
       description: 'Give item to player',
-      usage: '!give <item> [amount] [player]',
+      usage: '!giveitem <item> [amount] [player]',
       execute: (args, sender) => {
         if (args.length === 0) {
           return 'Specify item to give';

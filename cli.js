@@ -9,6 +9,7 @@ const readline = require('readline');
 const { spawn, exec } = require('child_process');
 const fs = require('fs');
 const path = require('path');
+const os = require('os');
 
 const rl = readline.createInterface({
   input: process.stdin,
@@ -16,8 +17,48 @@ const rl = readline.createInterface({
 });
 
 const CONFIG_PATH = path.join(__dirname, 'CONFIG.json');
+const PID_FILE = path.join(os.tmpdir(), 'pvp-bot-pids.json');
 let config = {};
 let engineProcess = null;
+
+// Show full logs including debug/warning/error
+function showFullLogs() {
+  const logDir = path.join(__dirname, 'data', 'logs');
+  if (!fs.existsSync(logDir)) {
+    console.log('\n📁 No logs directory found');
+    return;
+  }
+  
+  const logFiles = fs.readdirSync(logDir)
+    .filter(f => f.endsWith('.log'))
+    .sort()
+    .reverse()
+    .slice(0, 3); // Show last 3 log files
+  
+  if (logFiles.length === 0) {
+    console.log('\n📁 No log files found');
+    return;
+  }
+  
+  console.log('\n📋 Recent Logs:');
+  for (const file of logFiles) {
+    console.log(`\n--- ${file} ---`);
+    const content = fs.readFileSync(path.join(logDir, file), 'utf8');
+    const lines = content.split('\n').slice(-50); // Last 50 lines
+    console.log(lines.join('\n'));
+  }
+}
+
+// Clear screen and show with logs
+function clearAndShow() {
+  console.clear();
+  console.log('');
+  console.log('╔═══════════════════════════════════════════╗');
+  console.log('║        PvP Bot - Ultimate Combat Bot         ║');
+  console.log('║            CLI Management System            ║');
+  console.log('╚═══════════════════════════════════════════╝');
+  console.log('');
+}
 
 function question(query) {
   return new Promise(resolve => rl.question(query, resolve));
@@ -28,14 +69,7 @@ function clear() {
 }
 
 async function main() {
-  clear();
-  
-  console.log('');
-  console.log('╔═══════════════════════════════════════════╗');
-  console.log('║        PvP Bot - Ultimate Combat Bot         ║');
-  console.log('║            CLI Management System            ║');
-  console.log('╚═══════════════════════════════════════════╝');
-  console.log('');
+  clearAndShow();
   
   loadConfig();
   
@@ -46,6 +80,48 @@ function loadConfig() {
   if (fs.existsSync(CONFIG_PATH)) {
     config = JSON.parse(fs.readFileSync(CONFIG_PATH, 'utf8'));
   }
+}
+
+function savePID(pid) {
+  let pids = [];
+  if (fs.existsSync(PID_FILE)) {
+    pids = JSON.parse(fs.readFileSync(PID_FILE, 'utf8'));
+  }
+  pids.push(pid);
+  fs.writeFileSync(PID_FILE, JSON.stringify(pids));
+}
+
+function getPIDs() {
+  if (!fs.existsSync(PID_FILE)) return [];
+  return JSON.parse(fs.readFileSync(PID_FILE, 'utf8'));
+}
+
+function clearPIDs() {
+  if (fs.existsSync(PID_FILE)) {
+    fs.unlinkSync(PID_FILE);
+  }
+}
+
+function killAllBots() {
+  const pids = getPIDs();
+  let killed = 0;
+  
+  for (const pid of pids) {
+    try {
+      process.kill(pid, 'SIGINT');
+      killed++;
+    } catch (e) {
+      // Process already dead
+    }
+  }
+  
+  // Also try pkill as backup
+  try {
+    exec('pkill -f "node.*pvp-bot"', (err) => {});
+  } catch (e) {}
+  
+  clearPIDs();
+  return killed;
 }
 
 async function showMainMenu() {
@@ -78,8 +154,9 @@ async function showMainMenu() {
   console.log('5. 🎭  Combat Presets');
   console.log('6. 🔧  Edit Config Manually');
   console.log('7. 📦  Install/Update');
-  console.log('8. ❓  Help');
-  console.log('9. ❌  Exit');
+  console.log('8. 📋  View Logs (Debug/Warning/Error)');
+  console.log('9. ❓  Help');
+  console.log('10. ❌  Exit');
   console.log('');
   
   const choice = await question('Select: ');
@@ -92,8 +169,9 @@ async function showMainMenu() {
     case '5': await combatPresets(); break;
     case '6': await editConfig(); break;
     case '7': await installDeps(); break;
-    case '8': await showHelp(); break;
-    case '9': 
+    case '8': showFullLogs(); await showMainMenu(); return;
+    case '9': await showHelp(); break;
+    case '10': 
       console.log('\n👋 Goodbye!');
       process.exit(0);
     default:
@@ -107,7 +185,7 @@ async function showMainMenu() {
 
 async function startBot() {
   if (engineProcess) {
-    console.log('\n❌ Bot is already running!');
+    console.log('\n❌ Bot is already running from this CLI!');
     return;
   }
   
@@ -139,6 +217,8 @@ async function startBot() {
     env: env
   });
   
+  savePID(engineProcess.pid);
+  
   engineProcess.on('exit', (code) => {
     console.log('\n⚠️ Bot stopped (code: ' + code + ')');
     engineProcess = null;
@@ -146,22 +226,31 @@ async function startBot() {
 }
 
 async function stopBot() {
-  if (!engineProcess) {
-    console.log('\n❌ Bot is not running!');
-    return;
+  console.log('\n⏹️ Stopping all bots...');
+  
+  // Kill all tracked PIDs
+  const killed = killAllBots();
+  
+  // Also kill the process spawned by this CLI if it exists
+  if (engineProcess) {
+    try {
+      engineProcess.kill('SIGINT');
+    } catch (e) {}
+    engineProcess = null;
   }
   
-  console.log('\n⏹️ Stopping bot...');
+  if (killed > 0) {
+    console.log(`\n✅ Stopped ${killed} bot(s) via PID tracking`);
+  }
   
-  return new Promise((resolve) => {
-    engineProcess.once('exit', (code) => {
-      console.log(`\n⚠️ Bot stopped (code: ${code})`);
-      engineProcess = null;
-      resolve();
-    });
-    
-    engineProcess.kill('SIGINT');
+  // Double-check with pkill
+  exec('pkill -f "node.*(pvp-bot|engine.js|multi.js)"', (err) => {
+    if (!err) {
+      console.log('✅ Cleaned up remaining bot processes');
+    }
   });
+  
+  console.log('\n✅ All bots stopped!');
 }
 
 async function runSetup() {

@@ -1,15 +1,20 @@
 # PvP Bot - Command Reference
 
 ## Overview
-All commands use `!` prefix. Commands are processed by the main command handler and PvP addon.
+All commands use `!` prefix. Commands are processed by the main command handler (`src/core/commandHandler.js`) and individual addons.
 
-## Admin Commands
-*Only owner and admins can use these*
+## Admin Commands (Owner + Admins Only)
+*Only the owner and admins can use these commands*
 
 | Command | Usage | Description |
 |----------|-------|-------------|
 | `!admin` | `!admin <player>` | Add admin user |
 | `!admin` | `!admin` | List all admins |
+| `!pvp` | `!pvp` | Toggle PvP mode on/off |
+| `!pvp` | `!pvp <mode>` | Set PvP mode (aggressive/defensive/hitAndRun/surround/flank) |
+| `!tactical` | `!tactical <mode>` | Set tactical combat mode |
+| `!give` | `!give <amount> <player>` | Give bots to player (they will follow/protect) |
+| `!giveitem` | `!giveitem <item> [amount] [player]` | Give items to player |
 
 ## Bot Control Commands
 
@@ -17,29 +22,12 @@ All commands use `!` prefix. Commands are processed by the main command handler 
 |----------|-------|-------------|
 | `!help` | `!help [command]` | Show all commands or specific help |
 | `!status` | `!status` | Show bot status (health, food, position, mode) |
-| `!mode` | `!mode <afk|player>` | Switch bot mode |
+| `!mode` | `!mode <pvp|afk>` | Switch bot mode |
 | `!come` | `!come` | Make bot come to you |
 | `!follow` | `!follow [player]` | Follow a player |
 | `!stop` | `!stop` | Stop current action |
-
-## PvP Commands
-*Only owner and admins can use these*
-
-| Command | Usage | Description |
-|----------|-------|-------------|
-| `!pvp` | `!pvp` | Toggle PvP mode on/off |
-| `!ff` | `!ff` | Toggle friendly fire |
-| `!guard` | `!guard [player]` | Guard/protect a player |
-| `!squad` | `!squad` | Spawn 5-bot squad (owner + 4 bots) |
-| `!army` | `!army [count]` | Spawn 100+ bots with gaming names |
-
-## Item Commands
-
-| Command | Usage | Description |
-|----------|-------|-------------|
-| `!give` | `!give <item> [amount] [player]` | Give item to player |
-| `!inv` | `!inv` | Show inventory summary |
-| `!craft` | `!craft <item> [amount]` | Craft an item |
+| `!home` | `!home` | Go to saved home location |
+| `!sleep` | `!sleep` | Sleep in bed |
 
 ## World Interaction Commands
 
@@ -47,15 +35,29 @@ All commands use `!` prefix. Commands are processed by the main command handler 
 |----------|-------|-------------|
 | `!mine` | `!mine <block>` | Mine specific block type |
 | `!build` | `!build <house|tower|wall>` | Build a structure |
-| `!home` | `!home` | Go home |
-| `!sleep` | `!sleep` | Go to sleep |
+| `!craft` | `!craft <item> [amount]` | Craft an item |
+| `!inv` | `!inv` | Show inventory summary |
 
-## New Commands (Recently Added)
+## Information Commands
 
 | Command | Usage | Description |
 |----------|-------|-------------|
-| `!give` | `!give <amount> <player>` | Give bots to player (they will follow/protect) |
-| `!admin` | `!admin <player>` | Give admin access to another user |
+| `!progress` | `!progress` | Show Minecraft progression status |
+| `!mood` | `!mood` | Show bot AI mood and energy level |
+
+## PvP Features
+- **Rage-bait names**: Random goofy gaming names (ProRager, XxTryHardxx, etc.)
+- **Smart combat**: Reaction time (50-200ms), prediction with velocity + acceleration
+- **Tactical modes**: aggressive, defensive, hitAndRun, surround, flank
+- **Advanced techniques**: W-tap, strafing, knockback, critical hits, bunny hop
+- **Multi-bot**: Spawn up to 100 bots with gaming names via `!give`
+- **Friendly fire**: Toggle to prevent/allow hitting owner and friends
+
+## Command Permissions
+
+- **Owner** (`Super_nova94332`): All commands
+- **Admins**: Admin commands + give + giveitem
+- **Players**: None (can't use commands - security feature)
 
 ## Chat Command Examples
 
@@ -64,10 +66,10 @@ All commands use `!` prefix. Commands are processed by the main command handler 
 !help pvp       - Show help for !pvp command
 !status         - Check bot health and position
 !pvp            - Toggle PvP mode
-!ff             - Toggle friendly fire
-!guard Super_nova94332  - Guard player
-!squad          - Spawn 5-bot squad
+!pvp aggressive - Set aggressive tactical mode
+!tactical defensive - Set defensive mode
 !give 5 Steve   - Give 5 bots to Steve (they will follow/protect)
+!giveitem diamond_sword 1 Steve - Give diamond sword to Steve
 !admin Alex      - Make Alex an admin
 !come           - Make bot come to you
 !follow Alex     - Follow player Alex
@@ -77,33 +79,21 @@ All commands use `!` prefix. Commands are processed by the main command handler 
 !craft diamond_sword - Craft diamond sword
 !home           - Go home
 !sleep          - Sleep
+!progress       - Check progression
+!mood           - Check AI mood
 ```
 
-## Command Permissions
-
-- **Owner**: All commands
-- **Admins**: PvP commands + give + admin
-- **Players**: None (can't use commands)
-
-## PvP Features
-
-- **Rage-bait names**: Random goofy gaming names (ProRager, XxTryHardxx, etc.)
-- **Smart combat**: Reaction time (50-200ms), prediction with velocity + acceleration
-- **Tactical modes**: aggressive, defensive, hitAndRun, surround, flank
-- **Advanced techniques**: W-tap, strafing, knockback, critical hits, bunny hop
-- **Squad/Army**: Spawn multiple bots with gaming names
-- **Friendly fire**: Toggle to prevent/allow hitting owner and friends
-
-## Admin System
-
-- Owner can add admins with `!admin <player>`
-- Admins can use PvP commands and give bots to players
-- Players can't use any commands (security)
+## Addon Command Registration
+- Main commands: Registered in `src/core/commandHandler.js`
+- PvP commands: Registered by `addons/pvp.js` (if enabled)
+- All addons can register commands via `engine.commandHandler.registerCommand()`
 
 ## Tips
-
-1. Use `!squad` instead of `!army` for controlled 5-bot groups
-2. `!give 5 Steve` gives 5 bots that will follow and protect Steve
-3. Friendly fire (`!ff`) affects all bots in squad/army
-4. PvP mode uses advanced AI with smart target selection
-5. Reaction time makes combat feel human-like (not instant)
+1. Use `!give 5 <player>` to spawn 5 bots that follow and protect a player
+2. `!pvp aggressive` for all-out attack mode
+3. `!pvp defensive` for safe play with auto-retreat
+4. Reaction time makes combat feel human-like (not instant)
+5. Tactical modes affect strafe patterns and engagement distance
+6. Enable/disable addons in CONFIG.json `addons` section
+7. Max 100 bots per owner (configurable in `multi.js`)
+8. All bot PIDs tracked in `/tmp/pvp-bot-pids.json` for proper cleanup

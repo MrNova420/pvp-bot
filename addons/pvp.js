@@ -92,7 +92,7 @@ class PvPAddon {
     return `${baseName}_${suffix}${randomSuffix}`;
   }
 
-  init(bot, engine) {
+init(bot, engine) {
     this.bot = bot;
     this.engine = engine;
     this.logger = engine.logger;
@@ -108,7 +108,17 @@ class PvPAddon {
     this.autoHeal = config.autoHeal !== false;
     this.healThreshold = config.healThreshold || 10;
     
-    // Friendly fire setting
+    // Initialize combat stats
+    this.combatStats = {
+      hits: 0,
+      misses: 0,
+      damageDealt: 0,
+      damageTaken: 0,
+      kills: 0,
+      deaths: 0
+    };
+    
+    // Friendly fire
     this.friendlyFire = engine.config.friendlyFire?.enabled || false;
     
     // Initialize advanced PvP system if available

@@ -1,5 +1,3 @@
-const SoldierAddon = require('./soldier');
-
 class EnhancedSoldierAddon {
   constructor() {
     this.name = 'soldier'; // Name of the addon, used for mode switching
@@ -356,4 +354,4 @@ class EnhancedSoldierAddon {
   }
 }
 
-module.exports = new SoldierAddon();
+module.exports = new EnhancedSoldierAddon();

@@ -63,14 +63,15 @@
     "revengeEnabled": true
   },
   "addons": {
-    "afk": true,
-    "player": false,
-    "pathfinding": false,
-    "building": false,
-    "mining": false,
-    "crafting": false,
+    "afk": false,
+    "player": true,
+    "pathfinding": true,
+    "building": true,
+    "mining": true,
+    "crafting": true,
     "trading": false,
-    "superPathfinder": false
+    "superPathfinder": false,
+    "pvp": true
   },
   "owner": {
     "username": "Super_nova94332"

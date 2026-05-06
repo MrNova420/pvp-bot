@@ -1,10 +1,17 @@
 class PlayerInteractions {
-  constructor(bot, engine, logger) {
-    this.bot = bot;
-    this.engine = engine;
-    this.logger = logger;
+  constructor() {
+    this.name = 'player-interactions';
+    this.bot = null;
+    this.engine = null;
+    this.logger = null;
     this.activeRequests = new Map();
     this.helpQueue = [];
+  }
+  
+  init(bot, engine) {
+    this.bot = bot;
+    this.engine = engine;
+    this.logger = engine.getLogger();
   }
   
   handlePlayerRequest(playerName, request) {
