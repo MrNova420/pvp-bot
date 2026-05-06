@@ -360,13 +360,38 @@ class A1BotAddon {
       return;
     }
     
-    // From soldier.js - register !soldier commands
-    this.commandHandler.registerCommand(this.commandPrefix, (username, args) => {
-      const action = args[0]?.toLowerCase();
-      const params = args.slice(1);
-      return this.handleCommand(username, action, params);
+    // Register !soldier command with sub-command routing
+    this.commandHandler.registerCommand('soldier', {
+      description: 'Soldier command system',
+      usage: '!soldier <follow|guard|attack|gather|build|go|patrol|status|flee|stop|help>',
+      execute: (args, sender) => {
+        if (!this.enabled) {
+          return 'A1-bot is not enabled';
+        }
+        const action = args[0]?.toLowerCase();
+        const params = args.slice(1);
+        
+        if (!action) {
+          return 'Use !soldier help for available commands';
+        }
+        
+        switch(action) {
+          case 'follow': return this._followCommand(sender, params);
+          case 'guard': return this._guardCommand(sender, params);
+          case 'attack': return this._attackCommand(sender, params);
+          case 'gather': return this._gatherCommand(sender, params);
+          case 'build': return this._buildCommand(sender, params);
+          case 'go': return this._goCommand(sender, params);
+          case 'patrol': return this._patrolCommand(sender, params);
+          case 'status': return this._statusCommand(sender, params);
+          case 'flee': return this._fleeCommand(sender, params);
+          case 'stop': return this._stopCommand(sender, params);
+          case 'help': return this._helpCommand(sender, params);
+          default: return 'Unknown command: ' + action + '. Use !soldier help';
+        }
+      }
     });
-    this.logger.info(`[A1] Registered soldier commands with prefix: ${this.commandPrefix}`);
+    this.logger.info('[A1] Registered !soldier commands');
   }
   
 _setupEventListeners() {
@@ -392,8 +417,12 @@ _setupEventListeners() {
     if (this.enabled) return;
     this.enabled = true;
     
-    this.logger.info('[A1] Mode activated - ' + this.mode);
+    this.logger.info('[A1] Mode activated - ' + this.mode + ' | Advanced PvP: ' + this.useAdvanced);
     this._setState('idle');
+    
+    // Start combat mode with auto-attack
+    this.mode = 'combat';
+    this.autoAttack = true;
     
     if (this.taskManager) {
       this.taskManager.resume();
@@ -1377,9 +1406,6 @@ _setupEventListeners() {
       case 'follow':
         this.doFollow();
         break;
-      case 'combat':
-        this.doCombat();
-        break;
       case 'crystal':
         this.doCrystalPVP();
         break;
@@ -1387,6 +1413,7 @@ _setupEventListeners() {
       case 'pve':
         this.doPVEMode();
         break;
+      // combat is handled by _combatLoop() with advanced/pvp engine
     }
   }
   
